@@ -1,0 +1,2070 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intranet - Colaborador | Carajás Gestão em Saúde</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.0/babel.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="extractus_api.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'carajas-blue': '#0052CC',
+            'carajas-light': '#EBF5FF',
+            'carajas-dark': '#00377A',
+            'carajas-accent': '#00B0FF',
+            'carajas-silver': '#C0C0C0',
+            'carajas-gold': '#FFD700',
+            'carajas-diamond': '#00B0FF'
+          },
+          fontFamily: {
+            'sans': ['Montserrat', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    .sidebar {
+      transition: transform 0.3s ease-in-out;
+    }
+    @media (max-width: 768px) {
+      .sidebar-hidden {
+        transform: translateX(-100%);
+      }
+    }
+    .progress-bar {
+      background-color: #0052CC !important;
+    }
+    .toggle-checkbox {
+      display: none;
+    }
+    .toggle-label {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+      background-color: #ccc;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .toggle-label::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle-checkbox:checked + .toggle-label {
+      background-color: #0052CC;
+    }
+    .toggle-checkbox:checked + .toggle-label::after {
+      transform: translateX(20px);
+    }
+    .dark .toggle-label {
+      background-color: #4B5563;
+    }
+    .dark .toggle-checkbox:checked + .toggle-label {
+      background-color: #00B0FF;
+    }
+    .form-container {
+      background-color: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 16px;
+    }
+    .dark .form-container {
+      background-color: #1f2937;
+      border-color: #4b5563;
+    }
+    .form-control, .form-select {
+      background-color: #ffffff !important;
+      border-color: #ddd !important;
+    }
+    .dark .form-control, .dark .form-select {
+      background-color: #374151 !important;
+      border-color: #4b5563 !important;
+      color: #f3f4f6 !important;
+    }
+    .form-control:disabled, .form-select:disabled {
+      background-color: #e5e7eb !important;
+    }
+    .dark .form-control:disabled, .dark .form-select:disabled {
+      background-color: #4b5563 !important;
+    }
+    textarea.form-control {
+      resize: vertical;
+    }
+    .certification-card {
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+    .certification-card:hover {
+      transform: translateY(-5px);
+    }
+    .silver {
+      background: linear-gradient(135deg, #C0C0C0, #E0E0E0);
+    }
+    .gold {
+      background: linear-gradient(135deg, #FFD700, #FFEC80);
+    }
+    .diamond {
+      background: linear-gradient(135deg, #00B0FF, #80D8FF);
+    }
+    .none {
+      background: linear-gradient(135deg, #F5F5F5, #E0E0E0);
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+    .progress-thin {
+      height: 6px;
+    }
+    .seller-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-800 font-sans transition-colors duration-300">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // Componente Sidebar
+    function Sidebar({ isOpen, toggleSidebar }) {
+      const navItems = [
+        { name: 'Extractus Web', icon: 'fa-file-download', href: '#extractus' },
+        { name: 'Envio de E-mails', icon: 'fa-envelope', href: '#email-sender' },
+        { name: 'Certificação', icon: 'fa-award', href: '#certification' },
+        { name: 'Perfil', icon: 'fa-user', href: '#profile' },
+        { name: 'Painel de Vendas', icon: 'fa-chart-line', href: '#sales-panel' },
+      ];
+
+      return (
+        <div
+          className={`fixed md:static top-0 left-0 h-full w-64 bg-white dark:bg-gray-900 shadow-lg sidebar ${
+            isOpen ? '' : 'sidebar-hidden'
+          } z-50 md:translate-x-0`}
+        >
+          <div className="p-6 flex items-center justify-between">
+            <div className="flex items-center">
+              <img src="https://i.imgur.com/Fupvbzj.jpeg" alt="Logo" className="w-8 h-8 mr-2" />
+              <h3 className="text-lg font-bold text-carajas-dark dark:text-white">Intranet</h3>
+            </div>
+            <button className="md:hidden text-carajas-dark dark:text-white" onClick={toggleSidebar}>
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+          <nav className="mt-4">
+            {navItems.map((item, index) => (
+              <a
+                key={index}
+                href={item.href}
+                className="flex items-center px-6 py-3 text-carajas-dark dark:text-gray-200 hover:bg-carajas-light dark:hover:bg-gray-700 transition-colors"
+              >
+                <i className={`fas ${item.icon} mr-3`}></i>
+                <span>{item.name}</span>
+              </a>
+            ))}
+          </nav>
+        </div>
+      );
+    }
+
+    // Componente Header
+    function Header({ toggleSidebar, toggleDarkMode, isDarkMode }) {
+      return (
+        <header className="bg-white dark:bg-gray-900 shadow-lg py-4 sticky top-0 z-40">
+          <div className="container mx-auto px-4 flex items-center justify-between">
+            <button className="md:hidden text-carajas-dark dark:text-white" onClick={toggleSidebar}>
+              <i className="fas fa-bars text-2xl"></i>
+            </button>
+            <div className="flex items-center space-x-4">
+              <img
+                src="https://i.imgur.com/Fupvbzj.jpeg"
+                alt="Avatar"
+                className="w-10 h-10 rounded-full"
+              />
+              <span className="text-carajas-dark dark:text-white font-semibold">Bem-vindo, Admin</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button
+                className="text-carajas-dark dark:text-white"
+                onClick={toggleDarkMode}
+                aria-label="Alternar modo escuro"
+              >
+                <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'} text-xl`}></i>
+              </button>
+              <a
+                href="intranet.html"
+                className="text-carajas-blue hover:text-carajas-accent font-medium flex items-center"
+              >
+                <i className="fas fa-sign-out-alt mr-2"></i>
+                Sair
+              </a>
+            </div>
+          </div>
+        </header>
+      );
+    }
+
+    // Importar as funções da API Extractus
+    const { executarExtracao, criarEventSource } = window;
+
+    // Componente ExtractusForm
+    function ExtractusForm() {
+      const [file, setFile] = React.useState(null);
+      const [vencimento, setVencimento] = React.useState('15');
+      const [mes, setMes] = React.useState(new Date().getMonth() + 1);
+      const [tipos, setTipos] = React.useState(['boleto']);
+      const [status, setStatus] = React.useState('');
+      const [finalizado, setFinalizado] = React.useState(false);
+      const [progresso, setProgresso] = React.useState({
+        boleto: 0,
+        nota: 0,
+        relatorio: 0
+      });
+      const [processando, setProcessando] = React.useState({
+        boleto: false,
+        nota: false,
+        relatorio: false
+      });
+      const [resultados, setResultados] = React.useState({
+        boleto: 0,
+        nota: 0,
+        relatorio: 0
+      });
+      const [eventSources, setEventSources] = React.useState({});
+
+      const meses = [
+        { nome: 'Janeiro', valor: '01' },
+        { nome: 'Fevereiro', valor: '02' },
+        { nome: 'Março', valor: '03' },
+        { nome: 'Abril', valor: '04' },
+        { nome: 'Maio', valor: '05' },
+        { nome: 'Junho', valor: '06' },
+        { nome: 'Julho', valor: '07' },
+        { nome: 'Agosto', valor: '08' },
+        { nome: 'Setembro', valor: '09' },
+        { nome: 'Outubro', valor: '10' },
+        { nome: 'Novembro', valor: '11' },
+        { nome: 'Dezembro', valor: '12' }
+      ];
+
+      // Limpar event sources ao desmontar o componente
+      React.useEffect(() => {
+        return () => {
+          Object.values(eventSources).forEach(es => {
+            if (es && typeof es.close === 'function') {
+              es.close();
+            }
+          });
+        };
+      }, [eventSources]);
+
+      const handleTipoChange = (e) => {
+        const value = e.target.value;
+        if (e.target.checked) {
+          setTipos([...tipos, value]);
+        } else {
+          setTipos(tipos.filter((tipo) => tipo !== value));
+        }
+      };
+
+      // Função para processar um tipo de documento
+      const processarTipo = (tipo, extractionId) => {
+        setProcessando(prev => ({...prev, [tipo]: true}));
+        setProgresso(prev => ({...prev, [tipo]: 0}));
+        
+        // Criar um EventSource para acompanhar o progresso
+        const eventSource = criarEventSource(tipo);
+        
+        // Atualizar o estado dos event sources
+        setEventSources(prev => ({...prev, [tipo]: eventSource}));
+        
+        eventSource.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          
+          if (data.progresso) {
+            setProgresso(prev => ({...prev, [tipo]: data.progresso.porcentagem}));
+            
+            if (data.progresso.porcentagem >= 100) {
+              setProcessando(prev => ({...prev, [tipo]: false}));
+            }
+          }
+          
+          if (data.resultados) {
+            setResultados(prev => ({...prev, [tipo]: data.resultados[tipo]}));
+            
+            // Verificar se todos os tipos foram processados
+            const todosProcessados = tipos.every(t => !processando[t] || progresso[t] >= 100);
+            
+            if (todosProcessados) {
+              setStatus('Concluído');
+              setFinalizado(true);
+
+              // Exibir links de download
+              if (data.arquivos_gerados) {
+                exibirLinksDeDownload(data.arquivos_gerados);
+              }
+            }
+          }
+        };
+        
+        // Conectar ao EventSource real com o ID da extração
+        if (extractionId) {
+          eventSource.connect(extractionId);
+        } else {
+          // Fallback para simulação se não tiver ID (não deve acontecer em produção)
+          console.warn('Sem extractionId, usando simulação de progresso');
+          eventSource.simulateProgress();
+        }
+        
+        // Retornar uma função para limpar os recursos
+        return () => {
+          if (eventSource.simulateProgress) {
+            clearInterval(eventSource.simulateProgress());
+          }
+          eventSource.close();
+        };
+      };
+
+      const exibirLinksDeDownload = (arquivos) => {
+        const downloadLinks = document.getElementById('downloadLinks');
+        downloadLinks.innerHTML = '';
+
+        arquivos.forEach(arquivo => {
+          const link = document.createElement('a');
+          link.href = arquivo.caminho;
+          link.textContent = `Baixar ${arquivo.nome}`;
+          link.className = 'btn btn-primary';
+          link.style.backgroundColor = '#0052CC';
+          link.style.borderColor = '#0052CC';
+          link.download = arquivo.nome;
+          downloadLinks.appendChild(link);
+        });
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!file) {
+          alert('Selecione um arquivo Excel.');
+          return;
+        }
+        if (tipos.length === 0) {
+          alert('Selecione pelo menos um tipo de documento.');
+          return;
+        }
+        
+        // Limpar event sources anteriores
+        Object.values(eventSources).forEach(es => {
+          if (es && typeof es.close === 'function') {
+            es.close();
+          }
+        });
+        
+        setStatus('Processando...');
+        setFinalizado(false);
+        setResultados({boleto: 0, nota: 0, relatorio: 0});
+        setEventSources({});
+        
+        // Parâmetros para a extração
+        const params = {
+          excelPath: file, // Passar o objeto File diretamente
+          saveDir: '/downloads',
+          dueDay: vencimento,
+          monthNumber: mes,
+          tipos: tipos
+        };
+        
+        // Executar a extração
+        executarExtracao(params)
+          .then(data => {
+            console.log('Extração iniciada:', data);
+            
+            // Armazenar o ID da extração
+            const extractionId = data.extractionId;
+            
+            // Iniciar o processamento de cada tipo
+            tipos.forEach(tipo => {
+              processarTipo(tipo, extractionId);
+            });
+          })
+          .catch(error => {
+            console.error('Erro na extração:', error);
+            setStatus(`Erro: ${error.message}`);
+            setFinalizado(true);
+          });
+      };
+
+      return (
+        <section id="extractus" className="py-8">
+          <h2 className="text-2xl font-bold text-carajas-dark dark:text-white mb-6 flex items-center">
+            <i className="fas fa-file-download text-carajas-blue mr-2"></i>
+            Extractus Web
+          </h2>
+          <form onSubmit={handleSubmit} className="form-container p-6 rounded-xl shadow-lg">
+            <div className="mb-3">
+              <label htmlFor="excel_file" className="form-label text-carajas-dark dark:text-white">Arquivo Excel:</label>
+              <input
+                className="form-control"
+                type="file"
+                accept=".xlsx,.xls"
+                id="excel_file"
+                onChange={(e) => setFile(e.target.files[0])}
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Data de Vencimento:</label>
+              <select
+                className="form-select"
+                value={vencimento}
+                onChange={(e) => setVencimento(e.target.value)}
+                required
+              >
+                {[5, 10, 15, 20, 25, 30].map((dia) => (
+                  <option key={dia} value={dia}>{dia}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Mês de Referência:</label>
+              <select
+                className="form-select"
+                value={mes}
+                onChange={(e) => setMes(e.target.value)}
+                required
+              >
+                {meses.map((mesObj) => (
+                  <option key={mesObj.valor} value={mesObj.valor}>
+                    {mesObj.valor} - {mesObj.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Tipos de Documento:</label>
+              <div className="flex flex-wrap gap-6 mt-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="boleto"
+                    value="boleto"
+                    checked={tipos.includes('boleto')}
+                    onChange={handleTipoChange}
+                    className="toggle-checkbox"
+                    aria-label="Ativar extração de boletos"
+                  />
+                  <label htmlFor="boleto" className="toggle-label"></label>
+                  <span className="text-carajas-dark dark:text-white">Boletos</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="nota"
+                    value="nota"
+                    checked={tipos.includes('nota')}
+                    onChange={handleTipoChange}
+                    className="toggle-checkbox"
+                    aria-label="Ativar extração de notas fiscais"
+                  />
+                  <label htmlFor="nota" className="toggle-label"></label>
+                  <span className="text-carajas-dark dark:text-white">Notas Fiscais</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="relatorio"
+                    value="relatorio"
+                    checked={tipos.includes('relatorio')}
+                    onChange={handleTipoChange}
+                    className="toggle-checkbox"
+                    aria-label="Ativar extração de relatórios"
+                  />
+                  <label htmlFor="relatorio" className="toggle-label"></label>
+                  <span className="text-carajas-dark dark:text-white">Relatórios</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-success w-100"
+              style={{ backgroundColor: '#0052CC', borderColor: '#0052CC' }}
+            >
+              Iniciar Extração
+            </button>
+          </form>
+
+          {status && (
+            <div className="mt-5">
+              <h5 className="text-carajas-dark dark:text-white">Status da Extração:</h5>
+              
+              <div className="progress mb-3">
+                <div
+                  className="progress-bar progress-bar-striped progress-bar-animated"
+                  role="progressbar"
+                  style={{ width: '100%' }}
+                ></div>
+              </div>
+              
+              <div className="space-y-4">
+                {tipos.includes('boleto') && (
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium text-carajas-dark dark:text-white">Boletos</span>
+                      <span className="text-sm font-medium text-carajas-dark dark:text-white">
+                        {progresso.boleto}%
+                        {processando.boleto && <i className="fas fa-spinner fa-spin ml-2"></i>}
+                        {!processando.boleto && progresso.boleto === 100 && (
+                          <span className="ml-2 text-green-600">
+                            {resultados.boleto} documentos
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                      <div
+                        className="bg-blue-600 h-2.5 rounded-full"
+                        style={{ width: `${progresso.boleto}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                
+                {tipos.includes('nota') && (
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium text-carajas-dark dark:text-white">Notas Fiscais</span>
+                      <span className="text-sm font-medium text-carajas-dark dark:text-white">
+                        {progresso.nota}%
+                        {processando.nota && <i className="fas fa-spinner fa-spin ml-2"></i>}
+                        {!processando.nota && progresso.nota === 100 && (
+                          <span className="ml-2 text-green-600">
+                            {resultados.nota} documentos
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                      <div
+                        className="bg-green-600 h-2.5 rounded-full"
+                        style={{ width: `${progresso.nota}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                
+                {tipos.includes('relatorio') && (
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium text-carajas-dark dark:text-white">Relatórios</span>
+                      <span className="text-sm font-medium text-carajas-dark dark:text-white">
+                        {progresso.relatorio}%
+                        {processando.relatorio && <i className="fas fa-spinner fa-spin ml-2"></i>}
+                        {!processando.relatorio && progresso.relatorio === 100 && (
+                          <span className="ml-2 text-green-600">
+                            {resultados.relatorio} documentos
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                      <div
+                        className="bg-purple-600 h-2.5 rounded-full"
+                        style={{ width: `${progresso.relatorio}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-2 text-carajas-dark dark:text-white">{status}</div>
+              {finalizado && (
+                <div className="mt-3 flex space-x-3">
+                  <div id="downloadLinks" className="space-y-2"></div>
+                  <button
+                    className="btn btn-outline-secondary"
+                    onClick={() => {
+                      setStatus('');
+                      setFinalizado(false);
+                      setProgresso({boleto: 0, nota: 0, relatorio: 0});
+                    }}
+                  >
+                    <i className="fas fa-redo mr-2"></i>
+                    Nova Extração
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      );
+    }
+
+    // Componente EmailSenderForm
+    function EmailSenderForm() {
+      const [caminhoBoletos, setCaminhoBoletos] = React.useState('C:\\Users\\chrys\\Downloads\\Nova pasta (15)');
+      const [caminhoPlanilha, setCaminhoPlanilha] = React.useState('C:\\Users\\chrys\\Downloads\\SEAHPAR MÊS-04 (1) - Copia - Copia.xlsx');
+      const [caminhoAnexos, setCaminhoAnexos] = React.useState('C:\\Users\\chrys\\Downloads\\Nova pasta (15)');
+      const [smtpServer, setSmtpServer] = React.useState('smtplw.com.br');
+      const [smtpPort, setSmtpPort] = React.useState('587');
+      const [emailUser, setEmailUser] = React.useState('boleto@carajassaude.net');
+      const [emailSenha, setEmailSenha] = React.useState('');
+      const [apiToken, setApiToken] = React.useState('');
+      const [emailRemetente, setEmailRemetente] = React.useState('');
+      const [corpoEmail, setCorpoEmail] = React.useState(`
+Prezado (a), boa tarde!
+
+Segue em anexo o boleto para pagamento referente ao plano de saúde HapvidaNDI com vencimento em 20 de Março de 2025.
+
+Verifique o anexo para visualizar o boleto. Se houver qualquer dúvida ou problema com o boleto, não hesite em entrar em contato.
+
+Caso já tenha efetuado pagamento do boleto, por favor desconsiderar.
+
+OBS: POR GENTILEZA, VERIFICAR CAIXA DE SPAM, CASO NÃO RECEBA E-MAIL REFERENTE AOS BOLETOS. RESSALTO QUE É MUITO IMPORTANTE TAMBÉM VERIFICAR SE POSSUI BOLETOS DE MESES ANTERIORES EM ABERTO.
+
+Atenciosamente,
+Equipe Corretora Carajás Saúde💙
+      `.trim());
+      const [vencimento, setVencimento] = React.useState('20 de Março de 2025');
+      const [log, setLog] = React.useState('');
+      const [progress, setProgress] = React.useState(0);
+      const [isSending, setIsSending] = React.useState(false);
+
+      const validateEmail = (email) => {
+        const pattern = /^[\w\.-]+@[\w\.-]+\.\w+$/;
+        if (!email.trim()) {
+          appendLog('Erro: O campo de usuário SMTP não pode estar vazio.');
+          return false;
+        }
+        if (!pattern.test(email)) {
+          appendLog('Erro: Endereço de e-mail inválido para o usuário SMTP.');
+          return false;
+        }
+        return true;
+      };
+
+      const validatePassword = (password) => {
+        if (!password.trim()) {
+          appendLog('Erro: O campo de senha SMTP não pode estar vazio.');
+          return false;
+        }
+        return true;
+      };
+
+      const validateRemetente = (smtpUser, emailRemetente) => {
+        if (!emailRemetente) return true;
+        const smtpDomain = smtpUser.split('@')[1];
+        const remetenteDomain = emailRemetente.split('@')[1];
+        if (smtpDomain !== remetenteDomain) {
+          appendLog('Erro: O e-mail remetente deve pertencer ao mesmo domínio do usuário SMTP.');
+          return false;
+        }
+        return true;
+      };
+
+      const appendLog = (message) => {
+        setLog((prev) => prev + (prev ? '\n' : '') + message);
+      };
+
+      const selectFolder = (setter) => {
+        setter('/caminho/simulado/pasta');
+        appendLog(`Pasta selecionada: /caminho/simulado/pasta`);
+      };
+
+      const selectFile = (setter) => {
+        setter('/caminho/simulado/planilha.xlsx');
+        appendLog(`Arquivo selecionado: /caminho/simulado/planilha.xlsx`);
+      };
+
+      const testConnection = () => {
+        if (!apiToken) {
+          appendLog('Erro: O token da API deve ser preenchido.');
+          return;
+        }
+        appendLog('Testando conexão com a API...');
+        setTimeout(() => {
+          appendLog('Conexão com a API bem-sucedida!');
+        }, 1000);
+      };
+
+      const sendEmails = () => {
+        if (!validateEmail(emailUser)) return;
+        if (!validatePassword(emailSenha)) return;
+        if (!validateRemetente(emailUser, emailRemetente)) return;
+        if (!apiToken) {
+          appendLog('Erro: O token da API deve ser preenchido.');
+          return;
+        }
+        if (!caminhoBoletos || !caminhoPlanilha || !corpoEmail) {
+          appendLog('Erro: Todos os campos obrigatórios devem ser preenchidos.');
+          return;
+        }
+
+        setIsSending(true);
+        setProgress(0);
+        appendLog('Iniciando envio de e-mails...');
+        appendLog(`Configurações: SMTP=${smtpServer}:${smtpPort}, Usuário=${emailUser}, Remetente=${emailRemetente || emailUser}`);
+
+        let progressValue = 0;
+        const interval = setInterval(() => {
+          progressValue += 20;
+          setProgress(progressValue);
+          if (progressValue >= 100) {
+            clearInterval(interval);
+            appendLog('E-mail enviado para cliente@example.com.');
+            appendLog('Processo de envio finalizado!');
+            setIsSending(false);
+          } else {
+            appendLog(`Processando... ${progressValue}%`);
+          }
+        }, 1000);
+      };
+
+      return (
+        <section id="email-sender" className="py-8">
+          <h2 className="text-2xl font-bold text-carajas-dark dark:text-white mb-6 flex items-center">
+            <i className="fas fa-envelope text-carajas-blue mr-2"></i>
+            Envio de Boletos
+          </h2>
+          <div className="form-container p-6 rounded-xl shadow-lg">
+            <div className="row">
+              <div className="col-md-4 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Pasta Boletos:</label>
+                <div className="input-group">
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={caminhoBoletos}
+                    onChange={(e) => setCaminhoBoletos(e.target.value)}
+                    aria-label="Caminho da pasta de boletos"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => selectFolder(setCaminhoBoletos)}
+                  >
+                    ...
+                  </button>
+                </div>
+              </div>
+              <div className="col-md-4 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Planilha:</label>
+                <div className="input-group">
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={caminhoPlanilha}
+                    onChange={(e) => setCaminhoPlanilha(e.target.value)}
+                    aria-label="Caminho da planilha Excel"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => selectFile(setCaminhoPlanilha)}
+                  >
+                    ...
+                  </button>
+                </div>
+              </div>
+              <div className="col-md-4 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Pasta Anexos:</label>
+                <div className="input-group">
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={caminhoAnexos}
+                    onChange={(e) => setCaminhoAnexos(e.target.value)}
+                    aria-label="Caminho da pasta de anexos"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => selectFolder(setCaminhoAnexos)}
+                  >
+                    ...
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Servidor SMTP:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={smtpServer}
+                  onChange={(e) => setSmtpServer(e.target.value)}
+                  aria-label="Servidor SMTP"
+                />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Porta:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={smtpPort}
+                  onChange={(e) => setSmtpPort(e.target.value)}
+                  aria-label="Porta SMTP"
+                />
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Usuário:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={emailUser}
+                  onChange={(e) => setEmailUser(e.target.value)}
+                  aria-label="Usuário SMTP"
+                />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Senha:</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  value={emailSenha}
+                  onChange={(e) => setEmailSenha(e.target.value)}
+                  aria-label="Senha SMTP"
+                />
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Token API:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={apiToken}
+                  onChange={(e) => setApiToken(e.target.value)}
+                  placeholder="Insira o token da API Locaweb"
+                  aria-label="Token da API Locaweb"
+                />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Email Remetente:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={emailRemetente}
+                  onChange={(e) => setEmailRemetente(e.target.value)}
+                  aria-label="E-mail remetente"
+                />
+              </div>
+            </div>
+            <div className="mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Corpo do Email:</label>
+              <textarea
+                className="form-control"
+                value={corpoEmail}
+                onChange={(e) => setCorpoEmail(e.target.value)}
+                rows="8"
+                aria-label="Corpo do e-mail"
+              ></textarea>
+            </div>
+            <div className="mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Vencimento:</label>
+              <input
+                type="text"
+                className="form-control"
+                value={vencimento}
+                onChange={(e) => setVencimento(e.target.value)}
+                aria-label="Data de vencimento"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Log de Envio:</label>
+              <textarea
+                className="form-control"
+                value={log}
+                readOnly
+                rows="6"
+                aria-label="Log de envio"
+              ></textarea>
+            </div>
+            <div className="mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Progresso:</label>
+              <div className="progress">
+                <div
+                  className="progress-bar progress-bar-striped progress-bar-animated"
+                  role="progressbar"
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+            </div>
+            <div className="d-flex justify-content-between">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={testConnection}
+                disabled={isSending}
+                style={{ backgroundColor: '#0052CC', borderColor: '#0052CC' }}
+              >
+                Testar Conexão API
+              </button>
+              <button
+                type="button"
+                className="btn btn-success"
+                onClick={sendEmails}
+                disabled={isSending}
+                style={{ backgroundColor: '#0052CC', borderColor: '#0052CC' }}
+              >
+                Enviar E-mails
+              </button>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    // Componente NFChecker
+    function NFChecker() {
+      const [siteUrl, setSiteUrl] = React.useState('https://api.exemplo.com/notas');
+      const [apiKey, setApiKey] = React.useState('');
+      const [dataInicial, setDataInicial] = React.useState('');
+      const [dataFinal, setDataFinal] = React.useState('');
+      const [invoices, setInvoices] = React.useState([]);
+      const [selectedInvoices, setSelectedInvoices] = React.useState([]);
+      const [log, setLog] = React.useState('');
+      const [progress, setProgress] = React.useState(0);
+      const [isChecking, setIsChecking] = React.useState(false);
+      const [isSending, setIsSending] = React.useState(false);
+
+      // Dados fictícios de notas fiscais
+      const mockInvoices = [
+        { id: 1, numero: 'NF001', cliente: 'Cliente A', valor: 5000, dataEmissao: '2025-04-01', comissao: 500 },
+        { id: 2, numero: 'NF002', cliente: 'Cliente B', valor: 3000, dataEmissao: '2025-04-02', comissao: 300 },
+        { id: 3, numero: 'NF003', cliente: 'Cliente C', valor: 7000, dataEmissao: '2025-04-03', comissao: 700 },
+        { id: 4, numero: 'NF004', cliente: 'Cliente D', valor: 2000, dataEmissao: '2025-04-04', comissao: 200 },
+      ];
+
+      const appendLog = (message) => {
+        setLog((prev) => prev + (prev ? '\n' : '') + message);
+      };
+
+      const checkInvoices = () => {
+        if (!apiKey) {
+          appendLog('Erro: A chave da API deve ser preenchida.');
+          return;
+        }
+        if (!dataInicial || !dataFinal) {
+          appendLog('Erro: As datas inicial e final devem ser preenchidas.');
+          return;
+        }
+
+        setIsChecking(true);
+        setProgress(0);
+        appendLog('Verificando notas fiscais...');
+
+        // Simular busca de notas fiscais
+        setTimeout(() => {
+          let filteredInvoices = mockInvoices;
+          if (dataInicial) {
+            filteredInvoices = filteredInvoices.filter(
+              (inv) => new Date(inv.dataEmissao) >= new Date(dataInicial)
+            );
+          }
+          if (dataFinal) {
+            filteredInvoices = filteredInvoices.filter(
+              (inv) => new Date(inv.dataEmissao) <= new Date(dataFinal)
+            );
+          }
+
+          setInvoices(filteredInvoices);
+          setProgress(100);
+          appendLog(`Encontradas ${filteredInvoices.length} notas fiscais.`);
+          setIsChecking(false);
+        }, 2000);
+      };
+
+      const handleSelectInvoice = (id) => {
+        if (selectedInvoices.includes(id)) {
+          setSelectedInvoices(selectedInvoices.filter((invId) => invId !== id));
+        } else {
+          setSelectedInvoices([...selectedInvoices, id]);
+        }
+      };
+
+      const sendCommissionEmails = () => {
+        if (selectedInvoices.length === 0) {
+          appendLog('Erro: Selecione pelo menos uma nota fiscal.');
+          return;
+        }
+
+        setIsSending(true);
+        setProgress(0);
+        appendLog('Iniciando envio de e-mails de solicitação de comissão...');
+
+        let progressValue = 0;
+        const interval = setInterval(() => {
+          progressValue += 20;
+          setProgress(progressValue);
+          if (progressValue >= 100) {
+            clearInterval(interval);
+            selectedInvoices.forEach((id) => {
+              const invoice = invoices.find((inv) => inv.id === id);
+              appendLog(
+                `E-mail enviado para ${invoice.cliente} solicitando comissão de R$${invoice.comissao.toLocaleString(
+                  'pt-BR'
+                )}.`
+              );
+            });
+            appendLog('Processo de envio finalizado!');
+            setIsSending(false);
+            setSelectedInvoices([]);
+          } else {
+            appendLog(`Processando envio... ${progressValue}%`);
+          }
+        }, 1000);
+      };
+
+      return (
+        <div className="certification-card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg mb-8">
+          <h3 className="text-xl font-bold mb-4 flex items-center">
+            <i className="fas fa-file-invoice text-carajas-blue mr-2"></i>
+            NF Checker
+          </h3>
+          <div className="form-container p-6 rounded-xl">
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">URL do Site:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={siteUrl}
+                  onChange={(e) => setSiteUrl(e.target.value)}
+                  aria-label="URL do site"
+                />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Chave API:</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  aria-label="Chave API"
+                />
+              </div>
+            </div>
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Data Inicial:</label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={dataInicial}
+                  onChange={(e) => setDataInicial(e.target.value)}
+                  aria-label="Data inicial"
+                />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label text-carajas-dark dark:text-white">Data Final:</label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={dataFinal}
+                  onChange={(e) => setDataFinal(e.target.value)}
+                  aria-label="Data final"
+                />
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary w-100 mb-3"
+              onClick={checkInvoices}
+              disabled={isChecking || isSending}
+              style={{ backgroundColor: '#0052CC', borderColor: '#0052CC' }}
+            >
+              Verificar Notas Fiscais
+            </button>
+
+            {invoices.length > 0 && (
+              <div className="mb-3">
+                <h4 className="text-lg font-semibold mb-2">Notas Fiscais Encontradas</h4>
+                <div className="overflow-x-auto">
+                  <table className="table w-full">
+                    <thead>
+                      <tr>
+                        <th>Selecionar</th>
+                        <th>Número</th>
+                        <th>Cliente</th>
+                        <th>Valor (R$)</th>
+                        <th>Data Emissão</th>
+                        <th>Comissão (R$)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoices.map((invoice) => (
+                        <tr key={invoice.id}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={selectedInvoices.includes(invoice.id)}
+                              onChange={() => handleSelectInvoice(invoice.id)}
+                              disabled={isSending}
+                            />
+                          </td>
+                          <td>{invoice.numero}</td>
+                          <td>{invoice.cliente}</td>
+                          <td>{invoice.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                          <td>{new Date(invoice.dataEmissao).toLocaleDateString('pt-BR')}</td>
+                          <td>{invoice.comissao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-success w-100 mt-3"
+                  onClick={sendCommissionEmails}
+                  disabled={isChecking || isSending || selectedInvoices.length === 0}
+                  style={{ backgroundColor: '#0052CC', borderColor: '#0052CC' }}
+                >
+                  Enviar Solicitações de Comissão
+                </button>
+              </div>
+            )}
+
+            <div className="mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Log de Processamento:</label>
+              <textarea
+                className="form-control"
+                value={log}
+                readOnly
+                rows="6"
+                aria-label="Log de processamento"
+              ></textarea>
+            </div>
+            <div className="mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Progresso:</label>
+              <div className="progress">
+                <div
+                  className="progress-bar progress-bar-striped progress-bar-animated"
+                  role="progressbar"
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Componente CertificationDashboard
+    function CertificationDashboard() {
+      const [vidasEsperadas] = React.useState(5000);
+      const [vidasVendidas] = React.useState(3500);
+      const [vidasConfirmadas] = React.useState(3150);
+      const [currentMonthIndex, setCurrentMonthIndex] = React.useState(0);
+
+      // Dados dos vendedores
+      const sellers = [
+        {
+          name: 'Rayfe Bryan',
+          avatar: 'https://i.pravatar.cc/150?img=1',
+          totalSales: 900,
+          totalConfirmed: 810,
+          monthlyData: [
+            { month: 'Jan/24', sales: 100, confirmed: 90 },
+            { month: 'Fev/24', sales: 110, confirmed: 99 },
+            { month: 'Mar/24', sales: 120, confirmed: 108 },
+            { month: 'Abr/24', sales: 100, confirmed: 90 },
+            { month: 'Mai/24', sales: 110, confirmed: 99 },
+            { month: 'Jun/24', sales: 120, confirmed: 108 },
+            { month: 'Jul/24', sales: 130, confirmed: 117 },
+            { month: 'Ago/24', sales: 140, confirmed: 126 },
+            { month: 'Set/24', sales: 150, confirmed: 135 },
+            { month: 'Out/24', sales: 160, confirmed: 144 },
+            { month: 'Nov/24', sales: 170, confirmed: 153 },
+            { month: 'Dez/24', sales: 180, confirmed: 162 },
+            { month: 'Jan/25', sales: 190, confirmed: 171 },
+            { month: 'Fev/25', sales: 200, confirmed: 180 },
+            { month: 'Mar/25', sales: 210, confirmed: 189 },
+            { month: 'Abr/25', sales: 220, confirmed: 198 },
+            { month: 'Mai/25', sales: 230, confirmed: 207 },
+          ],
+        },
+        {
+          name: 'Chrystyan Loreto',
+          avatar: 'https://i.pravatar.cc/150?img=3',
+          totalSales: 850,
+          totalConfirmed: 765,
+          monthlyData: [
+            { month: 'Jan/24', sales: 90, confirmed: 81 },
+            { month: 'Fev/24', sales: 100, confirmed: 90 },
+            { month: 'Mar/24', sales: 110, confirmed: 99 },
+            { month: 'Abr/24', sales: 90, confirmed: 81 },
+            { month: 'Mai/24', sales: 100, confirmed: 90 },
+            { month: 'Jun/24', sales: 110, confirmed: 99 },
+            { month: 'Jul/24', sales: 120, confirmed: 108 },
+            { month: 'Ago/24', sales: 130, confirmed: 117 },
+            { month: 'Set/24', sales: 140, confirmed: 126 },
+            { month: 'Out/24', sales: 150, confirmed: 135 },
+            { month: 'Nov/24', sales: 160, confirmed: 144 },
+            { month: 'Dez/24', sales: 170, confirmed: 153 },
+            { month: 'Jan/25', sales: 180, confirmed: 162 },
+            { month: 'Fev/25', sales: 190, confirmed: 171 },
+            { month: 'Mar/25', sales: 200, confirmed: 180 },
+            { month: 'Abr/25', sales: 210, confirmed: 189 },
+            { month: 'Mai/25', sales: 220, confirmed: 198 },
+          ],
+        },
+        {
+          name: 'Jessica Scarlat',
+          avatar: 'https://i.pravatar.cc/150?img=5',
+          totalSales: 700,
+          totalConfirmed: 630,
+          monthlyData: [
+            { month: 'Jan/24', sales: 80, confirmed: 72 },
+            { month: 'Fev/24', sales: 90, confirmed: 81 },
+            { month: 'Mar/24', sales: 100, confirmed: 90 },
+            { month: 'Abr/24', sales: 80, confirmed: 72 },
+            { month: 'Mai/24', sales: 90, confirmed: 81 },
+            { month: 'Jun/24', sales: 100, confirmed: 90 },
+            { month: 'Jul/24', sales: 110, confirmed: 99 },
+            { month: 'Ago/24', sales: 120, confirmed: 108 },
+            { month: 'Set/24', sales: 130, confirmed: 117 },
+            { month: 'Out/24', sales: 140, confirmed: 126 },
+            { month: 'Nov/24', sales: 150, confirmed: 135 },
+            { month: 'Dez/24', sales: 160, confirmed: 144 },
+            { month: 'Jan/25', sales: 170, confirmed: 153 },
+            { month: 'Fev/25', sales: 180, confirmed: 162 },
+            { month: 'Mar/25', sales: 190, confirmed: 171 },
+            { month: 'Abr/25', sales: 200, confirmed: 180 },
+            { month: 'Mai/25', sales: 220, confirmed: 198 },
+          ],
+        },
+        {
+          name: 'Itamar Loreto',
+          avatar: 'https://i.pravatar.cc/150?img=4',
+          totalSales: 650,
+          totalConfirmed: 585,
+          monthlyData: [
+            { month: 'Jan/24', sales: 70, confirmed: 63 },
+            { month: 'Fev/24', sales: 80, confirmed: 72 },
+            { month: 'Mar/24', sales: 90, confirmed: 81 },
+            { month: 'Abr/24', sales: 70, confirmed: 63 },
+            { month: 'Mai/24', sales: 80, confirmed: 72 },
+            { month: 'Jun/24', sales: 90, confirmed: 81 },
+            { month: 'Jul/24', sales: 100, confirmed: 90 },
+            { month: 'Ago/24', sales: 110, confirmed: 99 },
+            { month: 'Set/24', sales: 120, confirmed: 108 },
+            { month: 'Out/24', sales: 130, confirmed: 117 },
+            { month: 'Nov/24', sales: 140, confirmed: 126 },
+            { month: 'Dez/24', sales: 150, confirmed: 135 },
+            { month: 'Jan/25', sales: 160, confirmed: 144 },
+            { month: 'Fev/25', sales: 170, confirmed: 153 },
+            { month: 'Mar/25', sales: 180, confirmed: 162 },
+            { month: 'Abr/25', sales: 190, confirmed: 171 },
+            { month: 'Mai/25', sales: 200, confirmed: 180 },
+          ],
+        },
+        {
+          name: 'Kaleo Zyan',
+          avatar: 'https://i.pravatar.cc/150?img=2',
+          totalSales: 400,
+          totalConfirmed: 360,
+          monthlyData: [
+            { month: 'Jan/24', sales: 60, confirmed: 54 },
+            { month: 'Fev/24', sales: 70, confirmed: 63 },
+            { month: 'Mar/24', sales: 80, confirmed: 72 },
+            { month: 'Abr/24', sales: 60, confirmed: 54 },
+            { month: 'Mai/24', sales: 70, confirmed: 63 },
+            { month: 'Jun/24', sales: 80, confirmed: 72 },
+            { month: 'Jul/24', sales: 90, confirmed: 81 },
+            { month: 'Ago/24', sales: 100, confirmed: 90 },
+            { month: 'Set/24', sales: 110, confirmed: 99 },
+            { month: 'Out/24', sales: 120, confirmed: 108 },
+            { month: 'Nov/24', sales: 130, confirmed: 117 },
+            { month: 'Dez/24', sales: 140, confirmed: 126 },
+            { month: 'Jan/25', sales: 150, confirmed: 135 },
+            { month: 'Fev/25', sales: 160, confirmed: 144 },
+            { month: 'Mar/25', sales: 170, confirmed: 153 },
+            { month: 'Abr/25', sales: 180, confirmed: 162 },
+            { month: 'Mai/25', sales: 190, confirmed: 171 },
+          ],
+        },
+      ];
+
+      // Dados de vendas e confirmações mensais (totais)
+      const monthlySalesData = [
+        { month: 'Jan/24', sales: 1800, confirmed: 1620 },
+        { month: 'Fev/24', sales: 1900, confirmed: 1710 },
+        { month: 'Mar/24', sales: 2100, confirmed: 1890 },
+        { month: 'Abr/24', sales: 2000, confirmed: 1800 },
+        { month: 'Mai/24', sales: 2200, confirmed: 1980 },
+        { month: 'Jun/24', sales: 2300, confirmed: 2070 },
+        { month: 'Jul/24', sales: 2400, confirmed: 2160 },
+        { month: 'Ago/24', sales: 2600, confirmed: 2340 },
+        { month: 'Set/24', sales: 2700, confirmed: 2430 },
+        { month: 'Out/24', sales: 2800, confirmed: 2520 },
+        { month: 'Nov/24', sales: 2900, confirmed: 2610 },
+        { month: 'Dez/24', sales: 3000, confirmed: 2700 },
+        { month: 'Jan/25', sales: 3100, confirmed: 2790 },
+        { month: 'Fev/25', sales: 3200, confirmed: 2880 },
+        { month: 'Mar/25', sales: 3300, confirmed: 2970 },
+        { month: 'Abr/25', sales: 3400, confirmed: 3060 },
+        { month: 'Mai/25', sales: 3500, confirmed: 3150 },
+      ];
+
+      const porcentagemVendidas = Math.round((vidasVendidas / vidasEsperadas) * 100);
+      const porcentagemConfirmadas = Math.round((vidasConfirmadas / vidasVendidas) * 100);
+
+      let nivelCertificacao = "Diamante";
+      let nivelCor = "diamond";
+
+      if (porcentagemVendidas >= 60 && porcentagemConfirmadas >= 90) {
+        nivelCertificacao = "Diamante";
+        nivelCor = "diamond";
+      } else if (porcentagemVendidas >= 50 && porcentagemConfirmadas >= 85) {
+        nivelCertificacao = "Ouro";
+        nivelCor = "gold";
+      } else if (porcentagemVendidas >= 40 && porcentagemConfirmadas >= 80) {
+        nivelCertificacao = "Prata";
+        nivelCor = "silver";
+      } else {
+        nivelCertificacao = "Não classificado";
+        nivelCor = "none";
+      }
+
+      // Funções para navegar entre meses
+      const nextMonth = () => {
+        if (currentMonthIndex < monthlySalesData.length - 1) {
+          setCurrentMonthIndex(currentMonthIndex + 1);
+        }
+      };
+
+      const prevMonth = () => {
+        if (currentMonthIndex > 0) {
+          setCurrentMonthIndex(currentMonthIndex - 1);
+        }
+      };
+
+      React.useEffect(() => {
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        const barChart = new Chart(barCtx, {
+          type: 'bar',
+          data: {
+            labels: ['Vidas Esperadas', 'Vidas Vendidas', 'Vidas Confirmadas'],
+            datasets: [{
+              label: 'Quantidade de Vidas',
+              data: [vidasEsperadas, vidasVendidas, vidasConfirmadas],
+              backgroundColor: [
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)'
+              ],
+              borderColor: [
+                'rgba(54, 162, 235, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Quantidade de Vidas'
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: 'Categorias'
+                }
+              }
+            },
+            plugins: {
+              title: {
+                display: true,
+                text: 'Comparação de Vidas: Esperadas, Vendidas e Confirmadas',
+                font: {
+                  size: 16
+                }
+              }
+            }
+          }
+        });
+
+        const doughnutCtx = document.getElementById('doughnutChart').getContext('2d');
+        const doughnutChart = new Chart(doughnutCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Vendidas', 'Faltam vender'],
+            datasets: [{
+              data: [porcentagemVendidas, 100 - porcentagemVendidas],
+              backgroundColor: [
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(255, 99, 132, 0.7)'
+              ],
+              borderColor: [
+                'rgba(75, 192, 192, 1)',
+                'rgba(255, 99, 132, 1)'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: `Vendas: ${porcentagemVendidas}% da meta`,
+                font: {
+                  size: 16
+                }
+              }
+            }
+          }
+        });
+
+        const lineCtx = document.getElementById('lineChart').getContext('2d');
+        const lineChart = new Chart(lineCtx, {
+          type: 'line',
+          data: {
+            labels: monthlySalesData.map(data => data.month),
+            datasets: [
+              {
+                label: 'Vidas Vendidas por Mês',
+                data: monthlySalesData.map(data => data.sales),
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+              },
+              {
+                label: 'Vidas Confirmadas por Mês',
+                data: monthlySalesData.map(data => data.confirmed),
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Quantidade de Vidas'
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: 'Mês'
+                }
+              }
+            },
+            plugins: {
+              title: {
+                display: true,
+                text: 'Vendas e Confirmações Mensais (Jan 2024 - Mai 2025)',
+                font: {
+                  size: 16
+                }
+              }
+            }
+          }
+        });
+
+        return () => {
+          barChart.destroy();
+          doughnutChart.destroy();
+          lineChart.destroy();
+        };
+      }, [vidasEsperadas, vidasVendidas, vidasConfirmadas, porcentagemVendidas]);
+
+      // Ordenar vendedores por total de vendas
+      const sortedSellers = [...sellers].sort((a, b) => b.totalSales - a.totalSales);
+
+      // Obter dados do mês atual
+      const currentMonthData = monthlySalesData[currentMonthIndex];
+      const currentMonthSellers = sellers
+        .map(seller => ({
+          ...seller,
+          sales: seller.monthlyData[currentMonthIndex].sales,
+          confirmed: seller.monthlyData[currentMonthIndex].confirmed
+        }))
+        .sort((a, b) => b.sales - a.sales);
+
+      return (
+        <section id="certification" className="py-8">
+          <h2 className="text-2xl font-bold text-carajas-dark dark:text-white mb-6 flex items-center">
+            <i className="fas fa-award text-carajas-blue mr-2"></i>
+            Certificação
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className={`certification-card ${nivelCor} p-6 rounded-lg shadow-lg`}>
+              <h3 className="text-xl font-bold text-center mb-4">Nível de Certificação</h3>
+              <div className="flex flex-col items-center">
+                <i className={`fas fa-award text-5xl mb-4 ${
+                  nivelCor === 'diamond' ? 'text-carajas-diamond' :
+                  nivelCor === 'gold' ? 'text-carajas-gold' :
+                  nivelCor === 'silver' ? 'text-carajas-silver' : 'text-gray-500'
+                }`}></i>
+                <span className="text-2xl font-bold">{nivelCertificacao}</span>
+              </div>
+            </div>
+
+            <div className="certification-card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg">
+              <h3 className="text-xl font-bold text-center mb-4">Vidas Esperadas</h3>
+              <div className="flex flex-col items-center">
+                <i className="fas fa-bullseye text-5xl mb-4 text-carajas-blue"></i>
+                <span className="text-2xl font-bold">{vidasEsperadas.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="certification-card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg">
+              <h3 className="text-xl font-bold text-center mb-4">Progresso</h3>
+              <div className="flex flex-col items-center">
+                <div className="radial-progress text-carajas-blue"
+                     style={{ "--value": porcentagemVendidas, "--size": "6rem", "--thickness": "10px" }}>
+                  {porcentagemVendidas}%
+                </div>
+                <p className="mt-2 text-center">Vendidas: {vidasVendidas.toLocaleString()}</p>
+                <p className="text-center">Confirmadas: {vidasConfirmadas.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="certification-card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg">
+              <h3 className="text-xl font-bold mb-4">Desempenho de Vendas</h3>
+              <div className="chart-container">
+                <canvas id="barChart"></canvas>
+              </div>
+            </div>
+
+            <div className="certification-card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg">
+              <h3 className="text-xl font-bold mb-4">Porcentagem de Vendas</h3>
+              <div className="chart-container">
+                <canvas id="doughnutChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div className="certification-card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg mb-8">
+            <h3 className="text-xl font-bold mb-4">Vendas e Confirmações Mensais</h3>
+            <div className="chart-container">
+              <canvas id="lineChart"></canvas>
+            </div>
+          </div>
+
+          <div className="certification-card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Ranking Mensal de Vendedores</h3>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={prevMonth}
+                  disabled={currentMonthIndex === 0}
+                  className={`p-2 rounded-full ${
+                    currentMonthIndex === 0 ? 'text-gray-400 cursor-not-allowed' : 'text-carajas-blue hover:bg-carajas-light dark:hover:bg-gray-600'
+                  }`}
+                >
+                  <i className="fas fa-chevron-left"></i>
+                </button>
+                <span className="font-semibold">{monthlySalesData[currentMonthIndex].month}</span>
+                <button
+                  onClick={nextMonth}
+                  disabled={currentMonthIndex === monthlySalesData.length - 1}
+                  className={`p-2 rounded-full ${
+                    currentMonthIndex === monthlySalesData.length - 1 ? 'text-gray-400 cursor-not-allowed' : 'text-carajas-blue hover:bg-carajas-light dark:hover:bg-gray-600'
+                  }`}
+                >
+                  <i className="fas fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-carajas-light dark:bg-gray-600 p-4 rounded-lg">
+                <h4 className="text-lg font-semibold mb-2">Vendas do Mês</h4>
+                <p className="text-3xl font-bold">{currentMonthData.sales.toLocaleString()}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {Math.round((currentMonthData.sales / vidasEsperadas) * 100)}% da meta
+                </p>
+              </div>
+              <div className="bg-carajas-light dark:bg-gray-600 p-4 rounded-lg">
+                <h4 className="text-lg font-semibold mb-2">Confirmações do Mês</h4>
+                <p className="text-3xl font-bold">{currentMonthData.confirmed.toLocaleString()}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {Math.round((currentMonthData.confirmed / currentMonthData.sales) * 100)}% de confirmação
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr>
+                    <th>Posição</th>
+                    <th>Vendedor</th>
+                    <th>Vidas Vendidas</th>
+                    <th>Vidas Confirmadas</th>
+                    <th>% Confirmação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentMonthSellers.map((seller, index) => (
+                    <tr key={seller.name} className={index === 0 ? 'bg-carajas-light dark:bg-gray-600' : ''}>
+                      <td>{index + 1}</td>
+                      <td className="flex items-center">
+                        <img src={seller.avatar} alt={seller.name} className="seller-avatar mr-2" />
+                        {seller.name}
+                      </td>
+                      <td>{seller.sales.toLocaleString()}</td>
+                      <td>{seller.confirmed.toLocaleString()}</td>
+                      <td>{seller.sales > 0 ? Math.round((seller.confirmed / seller.sales) * 100) : 0}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="certification-card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg mb-8">
+            <h3 className="text-xl font-bold mb-4">Ranking Geral de Vendedores</h3>
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr>
+                    <th>Posição</th>
+                    <th>Vendedor</th>
+                    <th>Vidas Vendidas</th>
+                    <th>Vidas Confirmadas</th>
+                    <th>% Confirmação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedSellers.map((seller, index) => (
+                    <tr key={seller.name} className={index === 0 ? 'bg-carajas-light dark:bg-gray-600' : ''}>
+                      <td>{index + 1}</td>
+                      <td className="flex items-center">
+                        <img src={seller.avatar} alt={seller.name} className="seller-avatar mr-2" />
+                        {seller.name}
+                      </td>
+                      <td>{seller.totalSales.toLocaleString()}</td>
+                      <td>{seller.totalConfirmed.toLocaleString()}</td>
+                      <td>{Math.round((seller.totalConfirmed / seller.totalSales) * 100)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="certification-card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg mb-8">
+            <h3 className="text-xl font-bold mb-4">Critérios para Certificação</h3>
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr>
+                    <th>Nível</th>
+                    <th>% de Vendas</th>
+                    <th>% de Confirmações</th>
+                    <th>Benefícios</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className={nivelCertificacao === 'Diamante' ? 'bg-carajas-light dark:bg-gray-600' : ''}>
+                    <td className="font-bold">Diamante</td>
+                    <td>≥ 60%</td>
+                    <td>≥ 90%</td>
+                    <td>Bônus de 15%, Viagem internacional</td>
+                  </tr>
+                  <tr className={nivelCertificacao === 'Ouro' ? 'bg-carajas-light dark:bg-gray-600' : ''}>
+                    <td className="font-bold">Ouro</td>
+                    <td>≥ 50%</td>
+                    <td>≥ 85%</td>
+                    <td>Bônus de 10%, Curso premium</td>
+                  </tr>
+                  <tr className={nivelCertificacao === 'Prata' ? 'bg-carajas-light dark:bg-gray-600' : ''}>
+                    <td className="font-bold">Prata</td>
+                    <td>≥ 40%</td>
+                    <td>≥ 80%</td>
+                    <td>Bônus de 5%, Treinamentos</td>
+                  </tr>
+                  <tr className={nivelCertificacao === 'Não classificado' ? 'bg-carajas-light dark:bg-gray-600' : ''}>
+                    <td className="font-bold">Não classificado</td>
+              
+                    <td>Acesso básico</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <NFChecker />
+        </section>
+      );
+    }
+
+    // Componente SalesPanel (completado)
+    function SalesPanel() {
+      const [vigencia, setVigencia] = React.useState('');
+      const [dataInicial, setDataInicial] = React.useState('');
+      const [dataFinal, setDataFinal] = React.useState('');
+      const [filteredSales, setFilteredSales] = React.useState([]);
+
+      // Dados fictícios de vendas com Sindicato
+      const salesData = [
+        { id: 1, cliente: 'Cliente A', vidas: 50, valor: 5000, canal: 'Telemarketing', vigencia: '01/2025', dataEntrada: '2025-01-10' },
+        { id: 2, cliente: 'Cliente B', vidas: 30, valor: 3000, canal: 'Presencial', vigencia: '02/2025', dataEntrada: '2025-02-15' },
+        { id: 3, cliente: 'Cliente C', vidas: 20, valor: 2000, canal: 'Telemarketing', vigencia: '01/2025', dataEntrada: '2025-01-20' },
+        { id: 4, cliente: 'Cliente D', vidas: 40, valor: 4000, canal: 'Sindicato', vigencia: '03/2025', dataEntrada: '2025-03-05' },
+        { id: 5, cliente: 'Cliente E', vidas: 60, valor: 6000, canal: 'Telemarketing', vigencia: '02/2025', dataEntrada: '2025-02-25' },
+        { id: 6, cliente: 'Cliente F', vidas: 25, valor: 2500, canal: 'Sindicato', vigencia: '01/2025', dataEntrada: '2025-01-15' },
+      ];
+
+      // Função para filtrar vendas
+      const filterSales = () => {
+        let filtered = salesData;
+
+        if (vigencia) {
+          filtered = filtered.filter(sale => sale.vigencia === vigencia);
+        }
+
+        if (dataInicial) {
+          filtered = filtered.filter(sale => new Date(sale.dataEntrada) >= new Date(dataInicial));
+        }
+
+        if (dataFinal) {
+          filtered = filtered.filter(sale => new Date(sale.dataEntrada) <= new Date(dataFinal));
+        }
+
+        setFilteredSales(filtered);
+      };
+
+      // Atualizar filtros ao mudar inputs
+      React.useEffect(() => {
+        filterSales();
+      }, [vigencia, dataInicial, dataFinal]);
+
+      // Calcular totais
+      const totalVidasGeral = filteredSales.reduce((sum, sale) => sum + sale.vidas, 0);
+      // Calcular totais por canal
+const totalVidasPorCanal = filteredSales.reduce((acc, sale) => {
+  acc[sale.canal] = (acc[sale.canal] || 0) + sale.vidas;
+  return acc;
+}, {});
+
+const totalValorPorCanal = filteredSales.reduce((acc, sale) => {
+  acc[sale.canal] = (acc[sale.canal] || 0) + sale.valor;
+  return acc;
+}, {});
+
+const totalValorGeral = filteredSales.reduce((sum, sale) => sum + sale.valor, 0);
+
+// Opções de vigência para o select
+const vigenciasDisponiveis = [...new Set(salesData.map(sale => sale.vigencia))].sort();
+
+return (
+  <section id="sales-panel" className="py-8">
+    <h2 className="text-2xl font-bold text-carajas-dark dark:text-white mb-6 flex items-center">
+      <i className="fas fa-chart-line text-carajas-blue mr-2"></i>
+      Painel de Vendas
+    </h2>
+
+    <div className="form-container p-6 rounded-xl shadow-lg mb-8">
+      <h3 className="text-xl font-semibold text-carajas-dark dark:text-white mb-4">Filtros</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className="form-label text-carajas-dark dark:text-white">Vigência:</label>
+          <select
+            className="form-select w-full"
+            value={vigencia}
+            onChange={(e) => setVigencia(e.target.value)}
+            aria-label="Selecionar vigência"
+          >
+            <option value="">Todas</option>
+            {vigenciasDisponiveis.map((vig) => (
+              <option key={vig} value={vig}>{vig}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="form-label text-carajas-dark dark:text-white">Data Inicial:</label>
+          <input
+            type="date"
+            className="form-control w-full"
+            value={dataInicial}
+            onChange={(e) => setDataInicial(e.target.value)}
+            aria-label="Data inicial"
+          />
+        </div>
+        <div>
+          <label className="form-label text-carajas-dark dark:text-white">Data Final:</label>
+          <input
+            type="date"
+            className="form-control w-full"
+            value={dataFinal}
+            onChange={(e) => setDataFinal(e.target.value)}
+            aria-label="Data final"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div className="certification-card bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg mb-8">
+      <h3 className="text-xl font-bold text-carajas-dark dark:text-white mb-4">Resumo de Vendas</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-carajas-light dark:bg-gray-600 p-4 rounded-lg">
+          <h4 className="text-lg font-semibold">Total de Vidas</h4>
+          <p className="text-2xl font-bold">{totalVidasGeral.toLocaleString()}</p>
+        </div>
+        <div className="bg-carajas-light dark:bg-gray-600 p-4 rounded-lg">
+          <h4 className="text-lg font-semibold">Total de Valor (R$)</h4>
+          <p className="text-2xl font-bold">{totalValorGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+        </div>
+        <div className="bg-carajas-light dark:bg-gray-600 p-4 rounded-lg">
+          <h4 className="text-lg font-semibold">Vendas por Canal</h4>
+          <ul className="text-sm">
+            {Object.entries(totalVidasPorCanal).map(([canal, vidas]) => (
+              <li key={canal}>
+                {canal}: {vidas} vidas / {totalValorPorCanal[canal].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="table w-full">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Vidas</th>
+              <th>Valor (R$)</th>
+              <th>Canal</th>
+              <th>Vigência</th>
+              <th>Data de Entrada</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredSales.length > 0 ? (
+              filteredSales.map((sale) => (
+                <tr key={sale.id}>
+                  <td>{sale.cliente}</td>
+                  <td>{sale.vidas}</td>
+                  <td>{sale.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                  <td>{sale.canal}</td>
+                  <td>{sale.vigencia}</td>
+                  <td>{new Date(sale.dataEntrada).toLocaleDateString('pt-BR')}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="text-center text-gray-500 dark:text-gray-400">
+                  Nenhuma venda encontrada com os filtros aplicados.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+);
+}
+
+// Componente ProfileForm
+function ProfileForm() {
+  const [formData, setFormData] = React.useState({
+    nome: 'Admin',
+    email: 'admin@carajassaude.net',
+    telefone: '(11) 99999-9999',
+    cargo: 'Administrador',
+    dataAdmissao: '2023-01-15',
+    avatar: 'https://i.imgur.com/Fupvbzj.jpeg'
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    alert('Perfil atualizado com sucesso!');
+  };
+
+  return (
+    <section id="profile" className="py-8">
+      <h2 className="text-2xl font-bold text-carajas-dark dark:text-white mb-6 flex items-center">
+        <i className="fas fa-user text-carajas-blue mr-2"></i>
+        Perfil
+      </h2>
+      <div className="form-container p-6 rounded-xl shadow-lg">
+        <form onSubmit={handleSubmit}>
+          <div className="row">
+            <div className="col-md-4 mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Nome:</label>
+              <input
+                type="text"
+                className="form-control"
+                name="nome"
+                value={formData.nome}
+                onChange={handleChange}
+                aria-label="Nome do usuário"
+              />
+            </div>
+            <div className="col-md-4 mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Email:</label>
+              <input
+                type="email"
+                className="form-control"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                aria-label="Email do usuário"
+              />
+            </div>
+            <div className="col-md-4 mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Telefone:</label>
+              <input
+                type="text"
+                className="form-control"
+                name="telefone"
+                value={formData.telefone}
+                onChange={handleChange}
+                aria-label="Telefone do usuário"
+              />
+            </div>
+          </div>
+          <div className="row">
+            <div className="col-md-6 mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Cargo:</label>
+              <input
+                type="text"
+                className="form-control"
+                name="cargo"
+                value={formData.cargo}
+                onChange={handleChange}
+                aria-label="Cargo do usuário"
+              />
+            </div>
+            <div className="col-md-6 mb-3">
+              <label className="form-label text-carajas-dark dark:text-white">Data de Admissão:</label>
+              <input
+                type="date"
+                className="form-control"
+                name="dataAdmissao"
+                value={formData.dataAdmissao}
+                onChange={handleChange}
+                aria-label="Data de admissão"
+              />
+            </div>
+          </div>
+          <div className="mb-3">
+            <label className="form-label text-carajas-dark dark:text-white">Avatar URL:</label>
+            <input
+              type="text"
+              className="form-control"
+              name="avatar"
+              value={formData.avatar}
+              onChange={handleChange}
+              aria-label="URL do avatar"
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary w-100"
+            style={{ backgroundColor: '#0052CC', borderColor: '#0052CC' }}
+          >
+            Atualizar Perfil
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+}
+
+// Componente Principal App
+function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isDarkMode, setIsDarkMode] = React.useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+    document.body.classList.toggle('dark');
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Header
+        toggleSidebar={toggleSidebar}
+        toggleDarkMode={toggleDarkMode}
+        isDarkMode={isDarkMode}
+      />
+      <div className="flex flex-1">
+        <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+        <main className="flex-1 p-4 md:p-8 bg-gray-50 dark:bg-gray-800">
+          <div className="container mx-auto">
+            <ExtractusForm />
+            <EmailSenderForm />
+            <CertificationDashboard />
+            <SalesPanel />
+            <ProfileForm />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+// Renderizar o aplicativo
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>

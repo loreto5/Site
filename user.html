@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Intranet do usuário da Carajás Gestão em Saúde - acesse seus serviços de saúde">
+  <title>Intranet - Usuário | Carajás Gestão em Saúde</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'carajas-blue': '#0052CC',
+            'carajas-light': '#EBF5FF',
+            'carajas-dark': '#00377A',
+            'carajas-accent': '#00B0FF',
+            'carajas-success': '#10B981',
+            'carajas-error': '#EF4444'
+          },
+          fontFamily: {
+            'sans': ['Montserrat', 'sans-serif'],
+          },
+          boxShadow: {
+            'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    #map {
+      height: 300px;
+      width: 100%;
+      border-radius: 0.5rem;
+    }
+    /* Animações e efeitos */
+    .fade-in {
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .card-transition {
+      transition: all 0.3s ease;
+    }
+    .card-transition:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--tw-shadow-card-hover);
+    }
+    .btn-pulse {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(0, 82, 204, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(0, 82, 204, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 82, 204, 0); }
+    }
+    /* Melhorias de acessibilidade */
+    .focus-visible:focus-visible {
+      outline: 2px solid #00B0FF;
+      outline-offset: 2px;
+    }
+    /* CSS para o tema escuro */
+    .dark {
+      --bg-primary: #121212;
+      --bg-secondary: #1E1E1E;
+      --text-primary: #F3F4F6;
+      --text-secondary: #D1D5DB;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen flex flex-col">
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:p-4 focus:bg-carajas-blue focus:text-white focus:fixed focus:z-50">Pular para o conteúdo principal</a>
+  
+  <header class="bg-white shadow-lg py-4 sticky top-0 z-10">
+    <div class="container mx-auto px-4 flex items-center justify-between">
+      <div class="flex items-center">
+        <img src="https://i.imgur.com/Fupvbzj.jpeg" alt="Carajás Gestão em Saúde Logo" class="w-12 h-12 mr-3" />
+        <h1 class="text-2xl font-extrabold text-carajas-dark hidden sm:block">Intranet - Usuário</h1>
+        <h1 class="text-xl font-extrabold text-carajas-dark sm:hidden">Intranet</h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <button id="theme-toggle" class="text-gray-700 hover:text-carajas-blue p-2 rounded-full focus-visible" aria-label="Alternar tema claro/escuro">
+          <i class="fas fa-moon"></i>
+        </button>
+        <div class="relative group">
+          <button class="flex items-center text-gray-700 hover:text-carajas-blue focus-visible" aria-expanded="false" aria-controls="user-menu">
+            <span class="mr-2 hidden sm:inline">Bem-vindo, Cliente</span>
+            <i class="fas fa-user-circle text-xl"></i>
+          </button>
+          <div id="user-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 hidden group-hover:block focus-within:block">
+            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-carajas-light focus-visible">Meu perfil</a>
+            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-carajas-light focus-visible">Configurações</a>
+            <hr class="my-1 border-gray-200">
+            <a href="intranet.html" class="block px-4 py-2 text-gray-800 hover:bg-carajas-light focus-visible">Sair</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="main-content" class="py-16 flex-grow">
+    <div class="container mx-auto px-4">
+      <div class="flex justify-between items-center mb-8">
+        <h2 class="text-3xl md:text-4xl font-bold text-carajas-dark">Painel do Usuário</h2>
+        <div>
+          <span id="date-time" class="text-gray-600"></span>
+        </div>
+      </div>
+      
+      <div class="bg-carajas-light p-4 rounded-lg mb-8 fade-in">
+        <div class="flex items-start">
+          <i class="fas fa-info-circle text-carajas-blue mt-1 mr-3 text-xl"></i>
+          <div>
+            <h3 class="font-semibold text-carajas-dark">Informações importantes</h3>
+            <p class="text-gray-700">Sua próxima consulta está agendada para 15/05/2025 às 14:00 com Dr. Silva (Cardiologia). <a href="#" class="text-carajas-blue hover:underline">Ver detalhes</a></p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        <div class="bg-white p-6 rounded-xl shadow-card card-transition">
+          <div class="flex justify-between items-start mb-4">
+            <h3 class="text-xl font-semibold text-carajas-dark flex items-center">
+              <i class="fas fa-file-medical text-carajas-blue mr-2"></i>
+              Detalhes do Plano
+            </h3>
+            <span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">Ativo</span>
+          </div>
+          <div class="space-y-2">
+            <p class="text-gray-600"><strong>Plano:</strong> Familiar</p>
+            <p class="text-gray-600"><strong>Cobertura:</strong> Nacional</p>
+            <p class="text-gray-600"><strong>Dependentes:</strong> 3</p>
+            <p class="text-gray-600"><strong>Vigência:</strong> 01/01/2025 a 31/12/2025</p>
+            <div class="mt-4 flex justify-between items-center">
+              <a href="#" class="text-carajas-blue hover:text-carajas-accent focus-visible">Ver contrato completo</a>
+              <button class="text-carajas-blue hover:text-carajas-accent focus-visible" aria-label="Ver mais detalhes do plano">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-card card-transition">
+          <h3 class="text-xl font-semibold text-carajas-dark mb-4 flex items-center">
+            <i class="fas fa-calendar-check text-carajas-blue mr-2"></i>
+            Agendamento de Consultas
+          </h3>
+          <form id="appointment-form" class="space-y-3">
+            <div>
+              <label for="specialty" class="text-sm text-gray-600 mb-1 block">Especialidade</label>
+              <select 
+                id="specialty" 
+                class="w-full p-3 border rounded-lg focus-visible" 
+                aria-label="Selecione a especialidade"
+                required
+              >
+                <option value="">Selecione a especialidade</option>
+                <option value="Clínico Geral">Clínico Geral</option>
+                <option value="Cardiologia">Cardiologia</option>
+                <option value="Pediatria">Pediatria</option>
+                <option value="Ortopedia">Ortopedia</option>
+                <option value="Neurologia">Neurologia</option>
+                <option value="Oftalmologia">Oftalmologia</option>
+              </select>
+            </div>
+            <div>
+              <label for="appointment-date" class="text-sm text-gray-600 mb-1 block">Data da consulta</label>
+              <input
+                id="appointment-date"
+                type="date"
+                class="w-full p-3 border rounded-lg focus-visible"
+                aria-label="Selecione a data da consulta"
+                required
+                min="2025-05-02"
+              />
+            </div>
+            <div>
+              <label for="appointment-time" class="text-sm text-gray-600 mb-1 block">Horário preferencial</label>
+              <select 
+                id="appointment-time" 
+                class="w-full p-3 border rounded-lg focus-visible" 
+                aria-label="Selecione o horário"
+                required
+              >
+                <option value="">Selecione o horário</option>
+                <option value="Manhã">Manhã (08:00 - 12:00)</option>
+                <option value="Tarde">Tarde (13:00 - 17:00)</option>
+              </select>
+            </div>
+            <button 
+              id="schedule-btn" 
+              type="submit"
+              class="w-full bg-carajas-blue text-white p-3 rounded-lg hover:bg-carajas-accent transition focus-visible"
+            >
+              Agendar agora
+            </button>
+          </form>
+          <div id="confirmation-message" class="text-carajas-success mt-4 text-sm hidden"></div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-card card-transition">
+          <h3 class="text-xl font-semibold text-carajas-dark mb-4 flex items-center">
+            <i class="fas fa-headset text-carajas-blue mr-2"></i>
+            Suporte
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-full bg-carajas-light flex items-center justify-center mr-3">
+                <i class="fas fa-phone text-carajas-blue"></i>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">Telefone</p>
+                <p class="text-gray-800 font-medium">(11) 99999-9999</p>
+              </div>
+            </div>
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-full bg-carajas-light flex items-center justify-center mr-3">
+                <i class="fas fa-envelope text-carajas-blue"></i>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">E-mail</p>
+                <p class="text-gray-800 font-medium">suporte@carajasgestao.com</p>
+              </div>
+            </div>
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-full bg-carajas-light flex items-center justify-center mr-3">
+                <i class="fab fa-whatsapp text-carajas-blue"></i>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500">WhatsApp</p>
+                <p class="text-gray-800 font-medium">(11) 99999-9999</p>
+              </div>
+            </div>
+            <button id="open-ticket-btn" class="w-full mt-2 bg-carajas-light text-carajas-blue p-3 rounded-lg hover:bg-carajas-blue hover:text-white transition focus-visible">
+              Abrir chamado
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-card card-transition">
+          <h3 class="text-xl font-semibold text-carajas-dark mb-4 flex items-center">
+            <i class="fas fa-id-card text-carajas-blue mr-2"></i>
+            Carteirinha Provisória
+          </h3>
+          <form id="card-form" class="space-y-3">
+            <div>
+              <label for="card-holder" class="text-sm text-gray-600 mb-1 block">Titular ou Dependente</label>
+              <select 
+                id="card-holder" 
+                class="w-full p-3 border rounded-lg focus-visible" 
+                aria-label="Selecione o titular ou dependente"
+                required
+              >
+                <option value="">Selecione o titular ou dependente</option>
+                <option value="Titular">Titular - João Silva</option>
+                <option value="Dependente 1">Dependente 1 - Maria Silva</option>
+                <option value="Dependente 2">Dependente 2 - Pedro Silva</option>
+                <option value="Dependente 3">Dependente 3 - Ana Silva</option>
+              </select>
+            </div>
+            <div class="flex space-x-2">
+              <button 
+                id="view-card-btn" 
+                type="button"
+                class="flex-1 bg-carajas-light text-carajas-blue p-3 rounded-lg hover:bg-carajas-blue hover:text-white transition focus-visible"
+              >
+                <i class="fas fa-eye mr-1"></i> Visualizar
+              </button>
+              <button 
+                id="download-card-btn" 
+                type="submit"
+                class="flex-1 bg-carajas-blue text-white p-3 rounded-lg hover:bg-carajas-accent transition focus-visible"
+              >
+                <i class="fas fa-download mr-1"></i> Baixar
+              </button>
+            </div>
+          </form>
+          <div id="card-preview" class="mt-4 p-3 border rounded-lg bg-gray-50 hidden">
+            <div class="bg-white rounded border p-3 shadow-sm">
+              <div class="flex justify-between">
+                <img src="https://i.imgur.com/Fupvbzj.jpeg" alt="Logo" class="h-8" />
+                <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">Provisória</span>
+              </div>
+              <div class="mt-2">
+                <h4 id="preview-name" class="font-bold"></h4>
+                <p class="text-xs text-gray-500">Carteirinha válida até 31/05/2025</p>
+              </div>
+            </div>
+          </div>
+          <div id="card-confirmation" class="text-carajas-success mt-4 text-sm hidden"></div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-card card-transition">
+          <h3 class="text-xl font-semibold text-carajas-dark mb-4 flex items-center">
+            <i class="fas fa-file-invoice text-carajas-blue mr-2"></i>
+            Boleto Segunda Via
+          </h3>
+          <form id="boleto-form" class="space-y-3">
+            <div>
+              <label for="boleto-month" class="text-sm text-gray-600 mb-1 block">Mês de referência</label>
+              <select 
+                id="boleto-month" 
+                class="w-full p-3 border rounded-lg focus-visible" 
+                aria-label="Selecione o mês do boleto"
+                required
+              >
+                <option value="">Selecione o mês</option>
+                <option value="01-2025">Janeiro 2025</option>
+                <option value="02-2025">Fevereiro 2025</option>
+                <option value="03-2025">Março 2025</option>
+                <option value="04-2025">Abril 2025</option>
+                <option value="05-2025">Maio 2025</option>
+              </select>
+            </div>
+            <button 
+              id="download-boleto-btn" 
+              type="submit"
+              class="w-full bg-carajas-blue text-white p-3 rounded-lg hover:bg-carajas-accent transition focus-visible"
+            >
+              Baixar Boleto
+            </button>
+          </form>
+          <div class="mt-4">
+            <h4 class="font-medium text-sm text-gray-700 mb-2">Últimos pagamentos</h4>
+            <div class="space-y-2">
+              <div class="flex justify-between items-center text-sm p-2 bg-gray-50 rounded">
+                <span>Abril/2025</span>
+                <span class="text-green-600">Pago</span>
+              </div>
+              <div class="flex justify-between items-center text-sm p-2 bg-gray-50 rounded">
+                <span>Março/2025</span>
+                <span class="text-green-600">Pago</span>
+              </div>
+            </div>
+          </div>
+          <div id="boleto-confirmation" class="text-carajas-success mt-4 text-sm hidden"></div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-card card-transition">
+          <h3 class="text-xl font-semibold text-carajas-dark mb-4 flex items-center">
+            <i class="fas fa-file-alt text-carajas-blue mr-2"></i>
+            Declaração do Imposto de Renda
+          </h3>
+          <div class="flex items-center justify-center bg-carajas-light rounded-lg p-4 mb-4">
+            <i class="fas fa-file-pdf text-carajas-blue text-4xl"></i>
+          </div>
+          <p class="text-gray-600 mb-4">Baixe a declaração para utilizar em sua declaração anual de imposto de renda.</p>
+          <div class="space-y-3">
+            <div>
+              <label for="tax-year" class="text-sm text-gray-600 mb-1 block">Ano de referência</label>
+              <select 
+                id="tax-year" 
+                class="w-full p-3 border rounded-lg focus-visible" 
+                aria-label="Selecione o ano"
+              >
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+              </select>
+            </div>
+            <button 
+              id="download-tax-btn" 
+              class="w-full bg-carajas-blue text-white p-3 rounded-lg hover:bg-carajas-accent transition focus-visible"
+            >
+              Baixar Declaração
+            </button>
+          </div>
+          <div id="tax-confirmation" class="text-carajas-success mt-4 text-sm hidden"></div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-card card-transition">
+          <h3 class="text-xl font-semibold text-carajas-dark mb-4 flex items-center">
+            <i class="fas fa-stethoscope text-carajas-blue mr-2"></i>
+            Guia Médico e Mapa
+          </h3>
+          <div class="space-y-3">
+            <div>
+              <label for="provider-search" class="text-sm text-gray-600 mb-1 block">Buscar por nome ou especialidade</label>
+              <div class="relative">
+                <input
+                  id="provider-search"
+                  type="text"
+                  placeholder="Ex: Cardiologia, Hospital..."
+                  class="w-full p-3 pl-10 border rounded-lg focus-visible"
+                  aria-label="Buscar prestadores médicos"
+                />
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              </div>
+            </div>
+            <div id="provider-list" class="max-h-40 overflow-y-auto mt-2 rounded-lg border">
+              <!-- Providers will be populated by JavaScript -->
+            </div>
+            <div id="map" class="mt-4"></div>
+          </div>
+        </div>
+
+        <div id="company-report-card" class="bg-white p-6 rounded-xl shadow-card card-transition hidden">
+          <h3 class="text-xl font-semibold text-carajas-dark mb-4 flex items-center">
+            <i class="fas fa-chart-bar text-carajas-blue mr-2"></i>
+            Relatório da Empresa
+          </h3>
+          <div class="flex items-center bg-carajas-light rounded-lg p-4 mb-4">
+            <i class="fas fa-file-chart-line text-carajas-blue text-4xl mr-4"></i>
+            <div>
+              <h4 class="font-medium">Relatórios empresariais</h4>
+              <p class="text-sm text-gray-600">Dados de utilização e custos do plano</p>
+            </div>
+          </div>
+          <form id="report-form" class="space-y-3">
+            <div>
+              <label for="report-period" class="text-sm text-gray-600 mb-1 block">Período do relatório</label>
+              <select 
+                id="report-period" 
+                class="w-full p-3 border rounded-lg focus-visible" 
+                aria-label="Selecione o período do relatório"
+                required
+              >
+                <option value="">Selecione o período</option>
+                <option value="Q1-2025">1º Trimestre 2025</option>
+                <option value="Q4-2024">4º Trimestre 2024</option>
+                <option value="Q3-2024">3º Trimestre 2024</option>
+                <option value="Q2-2024">2º Trimestre 2024</option>
+              </select>
+            </div>
+            <div>
+              <label for="report-type" class="text-sm text-gray-600 mb-1 block">Tipo de relatório</label>
+              <select 
+                id="report-type" 
+                class="w-full p-3 border rounded-lg focus-visible" 
+                aria-label="Selecione o tipo de relatório"
+                required
+              >
+                <option value="">Selecione o tipo</option>
+                <option value="utilization">Utilização do plano</option>
+                <option value="cost">Análise de custos</option>
+                <option value="employees">Perfil dos colaboradores</option>
+              </select>
+            </div>
+            <button 
+              id="download-report-btn" 
+              type="submit"
+              class="w-full bg-carajas-blue text-white p-3 rounded-lg hover:bg-carajas-accent transition focus-visible"
+            >
+              Baixar Relatório
+            </button>
+          </form>
+          <div id="report-confirmation" class="text-carajas-success mt-4 text-sm hidden"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal for ticket creation -->
+  <div id="ticket-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold text-carajas-dark">Abrir novo chamado</h3>
+        <button id="close-modal" class="text-gray-500 hover:text-gray-700 focus-visible">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form id="ticket-form" class="space-y-4">
+        <div>
+          <label for="ticket-subject" class="text-sm text-gray-600 mb-1 block">Assunto</label>
+          <input
+            id="ticket-subject"
+            type="text"
+            class="w-full p-3 border rounded-lg focus-visible"
+            placeholder="Digite o assunto do chamado"
+            required
+          />
+        </div>
+        <div>
+          <label for="ticket-category" class="text-sm text-gray-600 mb-1 block">Categoria</label>
+          <select
+            id="ticket-category"
+            class="w-full p-3 border rounded-lg focus-visible"
+            required
+          >
+            <option value="">Selecione a categoria</option>
+            <option value="billing">Cobrança/Pagamento</option>
+            <option value="coverage">Cobertura do plano</option>
+            <option value="card">Carteirinha/Acesso</option>
+            <option value="technical">Problemas técnicos</option>
+            <option value="other">Outros</option>
+          </select>
+        </div>
+        <div>
+          <label for="ticket-message" class="text-sm text-gray-600 mb-1 block">Mensagem</label>
+          <textarea
+            id="ticket-message"
+            class="w-full p-3 border rounded-lg focus-visible"
+            rows="4"
+            placeholder="Descreva seu problema ou solicitação"
+            required
+          ></textarea>
+        </div>
+        <div>
+          <label for="ticket-priority" class="text-sm text-gray-600 mb-1 block">Prioridade</label>
+          <select
+            id="ticket-priority"
+            class="w-full p-3 border rounded-lg focus-visible"
+            required
+          >
+            <option value="normal">Normal</option>
+            <option value="high">Alta</option>
+            <option value="urgent">Urgente</option>
+          </select>
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-carajas-blue text-white p-3 rounded-lg hover:bg-carajas-accent transition focus-visible"
+        >
+          Enviar chamado
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="bg-carajas-dark text-white py-8 mt-auto">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div>
+          <h4 class="font-bold mb-4">Carajás Gestão em Saúde</h4>
+          <p class="text-gray-300 text-sm">Cuidando da sua saúde com excelência desde 2010.</p>
+        </div>
+        <div>
+          <h4 class="font-bold mb-4">Contato</h4>
+          <ul class="space-y-2 text-sm">
+            <li><i class="fas fa-phone mr-2"></i>(11) 99999-9999</li>
+            <li><i class="fas fa-envelope mr-2"></i>contato@carajasgestao.com</li>
+            <li><i class="fas fa-map-marker-alt mr-2"></i>Av. Principal, 123 - Parauapebas, PA</li>
+          </ul>
+        </div>
+      </div>
+      <div class="pt-4 border-t border-gray-700 text-center text-sm">
+        <p>© 2025 Carajás Gestão em Saúde. Todos os direitos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Atualizar data e hora
+    function updateDateTime() {
+      const now = new Date();
+      const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      document.getElementById('date-time').textContent = now.toLocaleDateString('pt-BR', options);
+    }
+    updateDateTime();
+    setInterval(updateDateTime, 60000);
+
+    // Toggle do tema claro/escuro
+    const themeToggle = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement;
+    
+    function toggleDarkMode() {
+      htmlElement.classList.toggle('dark');
+      const isDark = htmlElement.classList.contains('dark');
+      document.body.style.backgroundColor = isDark ? 'var(--bg-primary)' : '';
+      document.body.style.color = isDark ? 'var(--text-primary)' : '';
+      
+      const cards = document.querySelectorAll('.bg-white');
+      cards.forEach(card => {
+        card.style.backgroundColor = isDark ? 'var(--bg-secondary)' : '';
+        card.style.color = isDark ? 'var(--text-primary)' : '';
+      });
+      
+      themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+      
+      // Salvar preferência no localStorage
+      localStorage.setItem('darkMode', isDark);
+    }
+    
+    // Verificar preferência salva
+    if (localStorage.getItem('darkMode') === 'true') {
+      toggleDarkMode();
+    }
+    
+    themeToggle.addEventListener('click', toggleDarkMode);
+
+    // Modal de abertura de chamado
+    const ticketModal = document.getElementById('ticket-modal');
+    const openTicketBtn = document.getElementById('open-ticket-btn');
+    const closeModal = document.getElementById('close-modal');
+    
+    openTicketBtn.addEventListener('click', () => {
+      ticketModal.classList.remove('hidden');
+      ticketModal.classList.add('fade-in');
+    });
+    
+    closeModal.addEventListener('click', () => {
+      ticketModal.classList.add('hidden');
+    });
+    
+    // Fechar modal ao clicar fora
+    ticketModal.addEventListener('click', (e) => {
+      if (e.target === ticketModal) {
+        ticketModal.classList.add('hidden');
+      }
+    });
+    
+    // Envio do formulário de chamado
+    document.getElementById('ticket-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const subject = document.getElementById('ticket-subject').value;
+      const category = document.getElementById('ticket-category').value;
+      
+      // Exibir confirmação
+      const confirmationEl = document.createElement('div');
+      confirmationEl.className = 'fixed top-4 right-4 bg-carajas-success text-white p-4 rounded-lg shadow-lg z-50 fade-in';
+      confirmationEl.innerHTML = `
+        <div class="flex items-center">
+          <i class="fas fa-check-circle mr-2"></i>
+          <p>Chamado "${subject}" aberto com sucesso! Acompanhe o status em seu e-mail.</p>
+        </div>
+      `;
+      document.body.appendChild(confirmationEl);
+      
+      // Remover confirmação após 5 segundos
+      setTimeout(() => {
+        confirmationEl.remove();
+      }, 5000);
+      
+      // Fechar modal e resetar formulário
+      ticketModal.classList.add('hidden');
+      document.getElementById('ticket-form').reset();
+    });
+
+    // Simulação de CNPJ (numa aplicação real, isso viria da autenticação)
+    const isCNPJAccess = true; // Defina como false para ocultar o card de relatório da empresa
+
+    // Mostrar card de relatório da empresa se acesso for via CNPJ
+    if (isCNPJAccess) {
+      document.getElementById('company-report-card').classList.remove('hidden');
+    }
+
+    // Dados dos prestadores médicos (exemplo)
+    const providers = [
+      {
+        name: 'Hospital Ypê',
+        specialty: 'Clínico Geral, Cardiologia',
+        address: 'Rua A, 123, Parauapebas, PA',
+        lat: -6.0678,
+        lng: -49.9022,
+        phone: '(94) 3333-1111'
+      },
+      {
+        name: 'Clínica Carajás',
+        specialty: 'Pediatria, Ginecologia',
+        address: 'Av. B, 456, Parauapebas, PA',
+        lat: -6.0700,
+        lng: -49.9000,
+        phone: '(94) 3333-2222'
+      },
+      {
+        name: 'Centro Médico Paraíso',
+        specialty: 'Ortopedia, Neurologia',
+        address: 'Rua C, 789, Parauapebas, PA',
+        lat: -6.0650,
+        lng: -49.9050,
+        phone: '(94) 3333-3333'
+      },
+      {
+        name: 'Consultório Dr. Silva',
+        specialty: 'Cardiologia',
+        address: 'Rua D, 101, Parauapebas, PA',
+        lat: -6.0690,
+        lng: -49.9030,
+        phone: '(94) 3333-4444'
+      },
+      {
+        name: 'Clínica Bem Estar',
+        specialty: 'Psicologia, Nutrição',
+        address: 'Av. E, 202, Parauapebas, PA',
+        lat: -6.0710,
+        lng: -49.9010,
+        phone: '(94) 3333-5555'
+      }
+    ];
+
+    // Inicializar mapa
+    const map = L.map('map').setView([-6.0678, -49.9022], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Array para armazenar os markers
+    const markers = [];
+
+    // Adicionar marcadores para os prestadores
+    providers.forEach(provider => {
+      const marker = L.marker([provider.lat, provider.lng])
+        .addTo(map)
+        .bindPopup(`
+          <div class="p-2">
+            <h3 class="font-bold">${provider.name}</h3>
+            <p><strong>Especialidades:</strong> ${provider.specialty}</p>
+            <p><strong>Endereço:</strong> ${provider.address}</p>
+            <p><strong>Telefone:</strong> ${provider.phone}</p>
+          </div>
+        `);
+      markers.push(marker);
+    });
+
+    // Agrupar todos os marcadores para ajustar o zoom
+    const bounds = L.featureGroup(markers).getBounds();
+    map.fitBounds(bounds);
+
+    // Função para renderizar a lista de prestadores
+    const providerList = document.getElementById('provider-list');
+    function renderProviders(filteredProviders) {
+      providerList.innerHTML = '';
+      
+      if (filteredProviders.length === 0) {
+        const div = document.createElement('div');
+        div.className = 'p-4 text-center text-gray-500';
+        div.innerHTML = 'Nenhum prestador encontrado. Tente outros termos.';
+        providerList.appendChild(div);
+        return;
+      }
+      
+      filteredProviders.forEach(provider => {
+        const div = document.createElement('div');
+        div.className = 'p-3 border-b hover:bg-gray-50 cursor-pointer';
+        div.innerHTML = `
+          <p class="text-gray-800 font-medium">${provider.name}</p>
+          <p class="text-gray-600 text-sm">${provider.specialty}</p>
+          <p class="text-gray-600 text-sm">${provider.address}</p>
+        `;
+        div.addEventListener('click', () => {
+          // Centralizar o mapa no prestador selecionado
+          map.setView([provider.lat, provider.lng], 16);
+          
+          // Abrir o popup do prestador
+          const marker = markers.find(m => 
+            m.getLatLng().lat === provider.lat && 
+            m.getLatLng().lng === provider.lng
+          );
+          if (marker) {
+            marker.openPopup();
+          }
+        });
+        providerList.appendChild(div);
+      });
+    }
+    
+    // Renderizar a lista inicial
+    renderProviders(providers);
+
+    // Pesquisar prestadores
+    document.getElementById('provider-search').addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const filteredProviders = providers.filter(provider =>
+        provider.name.toLowerCase().includes(searchTerm) ||
+        provider.specialty.toLowerCase().includes(searchTerm) ||
+        provider.address.toLowerCase().includes(searchTerm)
+      );
+      renderProviders(filteredProviders);
+    });
+
+    // Agendamento de consulta
+    document.getElementById('appointment-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const specialty = document.getElementById('specialty').value;
+      const date = document.getElementById('appointment-date').value;
+      const time = document.getElementById('appointment-time').value;
+      const confirmationMessage = document.getElementById('confirmation-message');
+
+      if (specialty && date && time) {
+        const formattedDate = new Date(date).toLocaleDateString('pt-BR');
+        confirmationMessage.innerHTML = `
+          <div class="flex items-center">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span>Consulta agendada para ${specialty} em ${formattedDate} no período da ${time.toLowerCase()}.</span>
+          </div>
+        `;
+        confirmationMessage.classList.remove('hidden', 'text-carajas-error');
+        confirmationMessage.classList.add('text-carajas-success');
+        
+        // Resetar o formulário
+        document.getElementById('appointment-form').reset();
+        
+        // Esconder a mensagem após 5 segundos
+        setTimeout(() => {
+          confirmationMessage.classList.add('hidden');
+        }, 5000);
+      } else {
+        confirmationMessage.innerHTML = `
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span>Por favor, preencha todos os campos.</span>
+          </div>
+        `;
+        confirmationMessage.classList.remove('hidden', 'text-carajas-success');
+        confirmationMessage.classList.add('text-carajas-error');
+      }
+    });
+
+    // Visualização da carteirinha
+    document.getElementById('view-card-btn').addEventListener('click', function() {
+      const holder = document.getElementById('card-holder').value;
+      const cardPreview = document.getElementById('card-preview');
+      const previewName = document.getElementById('preview-name');
+
+      if (holder) {
+        previewName.textContent = holder;
+        cardPreview.classList.remove('hidden');
+      } else {
+        alert('Por favor, selecione o titular ou dependente.');
+      }
+    });
+
+    // Download da carteirinha provisória
+    document.getElementById('card-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const holder = document.getElementById('card-holder').value;
+      const confirmation = document.getElementById('card-confirmation');
+
+      if (holder) {
+        confirmation.innerHTML = `
+          <div class="flex items-center">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span>Carteirinha de ${holder} baixada com sucesso!</span>
+          </div>
+        `;
+        confirmation.classList.remove('hidden', 'text-carajas-error');
+        confirmation.classList.add('text-carajas-success');
+        
+        // Resetar o formulário
+        document.getElementById('card-form').reset();
+        
+        // Esconder o preview
+        document.getElementById('card-preview').classList.add('hidden');
+        
+        // Esconder a mensagem após 5 segundos
+        setTimeout(() => {
+          confirmation.classList.add('hidden');
+        }, 5000);
+      } else {
+        confirmation.innerHTML = `
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span>Por favor, selecione o titular ou dependente.</span>
+          </div>
+        `;
+        confirmation.classList.remove('hidden', 'text-carajas-success');
+        confirmation.classList.add('text-carajas-error');
+      }
+    });
+
+    // Download de segunda via de boleto
+    document.getElementById('boleto-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const month = document.getElementById('boleto-month').value;
+      const confirmation = document.getElementById('boleto-confirmation');
+
+      if (month) {
+        // Formato mês/ano para exibição
+        const formattedMonth = `${month.split('-')[0]}/${month.split('-')[1]}`;
+        
+        confirmation.innerHTML = `
+          <div class="flex items-center">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span>Boleto de ${formattedMonth} baixado com sucesso!</span>
+          </div>
+        `;
+        confirmation.classList.remove('hidden', 'text-carajas-error');
+        confirmation.classList.add('text-carajas-success');
+        
+        // Resetar o formulário
+        document.getElementById('boleto-form').reset();
+        
+        // Esconder a mensagem após 5 segundos
+        setTimeout(() => {
+          confirmation.classList.add('hidden');
+        }, 5000);
+      } else {
+        confirmation.innerHTML = `
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span>Por favor, selecione um mês.</span>
+          </div>
+        `;
+        confirmation.classList.remove('hidden', 'text-carajas-success');
+        confirmation.classList.add('text-carajas-error');
+      }
+    });
+
+    // Download de declaração de imposto de renda
+    document.getElementById('download-tax-btn').addEventListener('click', function() {
+      const year = document.getElementById('tax-year').value;
+      const confirmation = document.getElementById('tax-confirmation');
+      
+      confirmation.innerHTML = `
+        <div class="flex items-center">
+          <i class="fas fa-check-circle mr-2"></i>
+          <span>Declaração de imposto de renda ${year} baixada com sucesso!</span>
+        </div>
+      `;
+      confirmation.classList.remove('hidden');
+      
+      // Esconder a mensagem após 5 segundos
+      setTimeout(() => {
+        confirmation.classList.add('hidden');
+      }, 5000);
+    });
+
+    // Download de relatório da empresa
+    document.getElementById('report-form')?.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const period = document.getElementById('report-period').value;
+      const type = document.getElementById('report-type').value;
+      const confirmation = document.getElementById('report-confirmation');
+
+      if (period && type) {
+        let typeName = '';
+        switch(type) {
+          case 'utilization':
+            typeName = 'Utilização do plano';
+            break;
+          case 'cost':
+            typeName = 'Análise de custos';
+            break;
+          case 'employees':
+            typeName = 'Perfil dos colaboradores';
+            break;
+        }
+        
+        confirmation.innerHTML = `
+          <div class="flex items-center">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span>Relatório de ${typeName} - ${period} baixado com sucesso!</span>
+          </div>
+        `;
+        confirmation.classList.remove('hidden', 'text-carajas-error');
+        confirmation.classList.add('text-carajas-success');
+        
+        // Resetar o formulário
+        document.getElementById('report-form').reset();
+        
+        // Esconder a mensagem após 5 segundos
+        setTimeout(() => {
+          confirmation.classList.add('hidden');
+        }, 5000);
+      } else {
+        confirmation.innerHTML = `
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span>Por favor, preencha todos os campos.</span>
+          </div>
+        `;
+        confirmation.classList.remove('hidden', 'text-carajas-success');
+        confirmation.classList.add('text-carajas-error');
+      }
+    });
+
+    // Corrigir erro no script original
+    document.getElementById('download-boleto-btn').addEventListener('click', function(e) {
+      e.preventDefault(); // Prevenir comportamento padrão se já não estiver em um formulário
+      const confirmation = document.getElementById('boleto-confirmation');
+      // Garantir que não haja erro ao acessar classList
+      if (confirmation && confirmation.classList) {
+        confirmation.classList.add('text-carajas-success');
+      }
+    });
+
+    // Adicionar função para suporte a teclas de acessibilidade
+    document.addEventListener('keydown', function(e) {
+      // Fechar modal com ESC
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('ticket-modal');
+        if (!modal.classList.contains('hidden')) {
+          modal.classList.add('hidden');
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carajás Gestão em Saúde | Seu Parceiro em Saúde</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.0/babel.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'carajas-blue': '#0052CC',
+            'carajas-light': '#EBF5FF',
+            'carajas-dark': '#00377A',
+            'carajas-accent': '#00B0FF'
+          },
+          fontFamily: {
+            'sans': ['Montserrat', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    .text-shadow {
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .bg-gradient {
+      background: linear-gradient(to right, #0052CC, #00B0FF);
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans">
+  <div id="root"></div>
+
+  <script type="text/javascript">
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+    var gk_fileData = {};
+    function filledCell(cell) {
+      return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
+      if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+        try {
+          var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+          var firstSheetName = workbook.SheetNames[0];
+          var worksheet = workbook.Sheets[firstSheetName];
+          var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+          var filteredData = jsonData.filter(row => row.some(filledCell));
+          var headerRowIndex = filteredData.findIndex((row, index) =>
+            row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+          );
+          if (headerRowIndex === -1 || headerRowIndex > 25) {
+            headerRowIndex = 0;
+          }
+          var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+          csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+          return csv;
+        } catch (e) {
+          console.error(e);
+          return "";
+        }
+      }
+      return gk_fileData[filename] || "";
+    }
+  </script>
+
+  <script type="text/babel">
+    // Dados simulados para tornar o site dinâmico
+    const dadosSite = {
+      menuItems: [
+        { id: 1, nome: "Início", link: "#home" },
+        { id: 2, nome: "História", link: "#historia" },
+        { id: 3, nome: "Estrutura", link: "#estrutura" },
+        { id: 4, nome: "Premiações", link: "#premiacoes" },
+        { id: 5, nome: "Planos", link: "#planos" },
+        { id: 6, nome: "Contato", link: "#contato" },
+        { id: 7, nome: "Intranet", link: "#intranet" }
+      ],
+      beneficios: [
+        {
+          icon: "fas fa-hospital",
+          title: "Ampla Rede Credenciada",
+          description: "Acesso a hospitais, clínicas e laboratórios em todo o Brasil."
+        },
+        {
+          icon: "fas fa-user-md",
+          title: "Médicos Especialistas",
+          description: "Consultas com os melhores profissionais de diversas especialidades."
+        },
+        {
+          icon: "fas fa-tooth",
+          title: "Planos Odontológicos",
+          description: "Tratamentos preventivos um sorriso saudável."
+        },
+        {
+          icon: "fas fa-mobile-alt",
+          title: "App Exclusivo",
+          description: "Agende consultas, exames e tenha acesso a telemedicina 24h."
+        }
+      ],
+      premiacoes: [
+        {
+          ano: "2023.2",
+          titulo: "Certificação Hapvida Nível Prata",
+          descricao: "Reconhecida por excelência em atendimento e vendas de planos Hapvida.",
+          imagem: "https://i.imgur.com/mzLR0YF.jpeg"
+        },
+        {
+          ano: "2024.1",
+          titulo: "Certificação Hapvida Nível Prata",
+          descricao: "Premiada novamente pela qualidade no atendimento e satisfação do cliente.",
+          imagem: "https://i.imgur.com/mzLR0YF.jpeg"
+        },
+        {
+          ano: "2025",
+          titulo: "Certificação Hapvida Nível Ouro",
+          descricao: "Consolidada como referência em corretagem de saúde no Brasil.",
+          imagem: "https://i.imgur.com/mzLR0YF.jpeg"
+        },
+        {
+          ano: "2023",
+          titulo: "Top 50 Corretoras do Norte",
+          descricao: "Destaque entre as melhores corretoras da região Norte do Brasil.",
+          imagem: "https://i.imgur.com/Fupvbzj.jpeg"
+        }
+      ],
+      planos: [
+        {
+          nome: "Plano Individual",
+          preco: "Apartir de R$ 199,90",
+          periodo: " por mês",
+          destaque: false,
+          categoria: "individual",
+          recursos: [
+            "Consultas em todas especialidades",
+            "Exames laboratoriais",
+            "Pronto-atendimento 24h",
+            "App com telemedicina"
+          ],
+          imagem: "https://i.imgur.com/Fupvbzj.jpeg"
+        },
+        {
+          nome: "Plano Familiar",
+          preco: "Sob consulta",
+          periodo: "",
+          destaque: true,
+          categoria: "familiar",
+          recursos: [
+            "Tudo do plano Individual",
+            "Descontos exclusivos",
+            "Plano odontológico incluso",
+            "Desconto em farmácias"
+          ],
+          imagem: "https://i.imgur.com/Fupvbzj.jpeg"
+        },
+        {
+          nome: "Plano Empresarial",
+          preco: "Sob consulta",
+          periodo: "",
+          destaque: false,
+          categoria: "empresarial",
+          recursos: [
+            "Planos personalizados",
+            "Medicina ocupacional",
+            "Gestão de saúde corporativa",
+            "Descontos progressivos"
+          ],
+          imagem: "https://i.imgur.com/Fupvbzj.jpeg"
+        },
+        {
+          nome: "Plano Odontológico",
+          preco: "Apartir de R$ 29,90",
+          periodo: " por mês",
+          destaque: false,
+          categoria: "odontologico",
+          recursos: [
+            "Limpeza e profilaxia",
+            "Tratamento de canal",
+            "Ortodontia",
+            "Descontos em procedimentos"
+          ],
+          imagem: "https://i.imgur.com/Fupvbzj.jpeg"
+        }
+      ],
+      depoimentos: [
+        {
+          nome: "Ana Silva",
+          perfil: "Cliente há 3 anos",
+          texto: "Graças à Carajás Gestão em Saúde, encontrei um plano que atende toda minha família com um preço que cabe no meu orçamento. O atendimento foi excepcional!",
+          avatar: "https://i.imgur.com/Fupvbzj.jpeg",
+          avaliacao: 5
+        },
+        {
+          nome: "Carlos Mendes",
+          perfil: "Cliente empresarial",
+          texto: "Oferecemos plano de saúde Hapvida para nossos 50 colaboradores e a equipe da Carajás Gestão em Saúde cuidou de todo o processo com muita eficiência.",
+          avatar: "https://i.imgur.com/Fupvbzj.jpeg",
+          avaliacao: 5
+        },
+        {
+          nome: "Patrícia Lopes",
+          perfil: "Cliente há 5 anos",
+          texto: "Sempre que preciso de atendimento médico, tenho total tranquilidade. A rede credenciada é excelente e o suporte da Carajás Gestão em Saúde é incomparável.",
+          avatar: "https://i.imgur.com/Fupvbzj.jpeg",
+          avaliacao: 5
+        },
+        {
+          nome: "Roberto Almeida",
+          perfil: "Cliente há 2 anos",
+          texto: "Excelente atendimento e ótima relação custo-benefício. Recomendo a todos que buscam um plano de saúde de qualidade com preço justo.",
+          avatar: "https://i.imgur.com/Fupvbzj.jpeg",
+          avaliacao: 4
+        },
+        {
+          nome: "Fernanda Costa",
+          perfil: "Cliente há 1 ano",
+          texto: "Processo de contratação rápido e sem burocracia. Os consultores são muito atenciosos e encontraram o plano perfeito para mim.",
+          avatar: "https://i.imgur.com/Fupvbzj.jpeg",
+          avaliacao: 5
+        }
+      ],
+      faqs: [
+        {
+          pergunta: "Qual a carência dos planos Hapvida?",
+          resposta: "As carências variam conforme o procedimento e o plano escolhido. Em geral, urgências e emergências têm cobertura imediata, consultas básicas possuem carência de 30 dias, e procedimentos mais complexos podem ter carência de até 180 dias. Nossos consultores podem detalhar as carências específicas para cada plano."
+        },
+        {
+          pergunta: "Posso incluir dependentes no meu plano?",
+          resposta: "Sim! Os planos Hapvida permitem a inclusão de cônjuge e filhos como dependentes. Em planos familiares, é possível incluir até 4 pessoas. Para mais informações sobre documentação necessária e valores, entre em contato conosco."
+        },
+        {
+          pergunta: "Há cobertura para tratamentos odontológicos?",
+          resposta: "Oferecemos planos com cobertura odontológica completa, incluindo prevenção, tratamentos de canal, ortodontia e estética. Você pode optar por um plano que inclua tanto saúde quanto odontologia ou contratar apenas o plano odontológico."
+        },
+        {
+          pergunta: "Como funciona o plano empresarial?",
+          resposta: "Os planos empresariais Hapvida são personalizados conforme o tamanho e as necessidades da empresa. Oferecemos condições especiais a partir de 3 vidas, com preços diferenciados e benefícios exclusivos. Nossa equipe realiza uma análise detalhada para apresentar a melhor proposta."
+        },
+        {
+          pergunta: "Quais documentos são necessários para contratação?",
+          resposta: "Para contratação de planos individuais e familiares, são necessários RG, CPF, comprovante de residência e, em alguns casos, declaração de saúde. Para planos empresariais, é preciso CNPJ, contrato social, documentos dos sócios e relação de funcionários."
+        }
+      ]
+    };
+
+    // Componente Header com menu dinâmico
+    function Header() {
+      const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+      const [isScrolled, setIsScrolled] = React.useState(false);
+      
+      React.useEffect(() => {
+        const handleScroll = () => {
+          if (window.scrollY > 10) {
+            setIsScrolled(true);
+          } else {
+            setIsScrolled(false);
+          }
+        };
+        
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+      }, []);
+      
+      return (
+        <header className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white text-carajas-dark shadow-lg py-2' : 'bg-transparent text-white py-6'}`}>
+          <div className="container mx-auto flex justify-between items-center px-4">
+            <div className="flex items-center">
+              <img 
+                src="https://i.imgur.com/Fupvbzj.jpeg" 
+                alt="Carajás Gestão em Saúde Logo" 
+                className={`w-12 h-12 mr-3 ${isScrolled ? '' : 'invert brightness-0'}`} 
+              />
+              <h1 className="text-2xl md:text-3xl font-extrabold">Carajás Gestão em Saúde</h1>
+            </div>
+            
+            <nav className="hidden md:block">
+              <ul className="flex space-x-8">
+                {dadosSite.menuItems.map(item => (
+                  <li key={item.id}>
+                    <a 
+                      href={item.link} 
+                      className={`hover:text-carajas-accent transition-colors font-medium ${isScrolled ? 'text-gray-700' : 'text-white'}`}
+                    >
+                      {item.nome}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            
+            <button 
+              className="md:hidden text-2xl"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={isMenuOpen}
+            >
+              <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
+            </button>
+            
+            {isMenuOpen && (
+              <div className="absolute top-full left-0 w-full bg-white shadow-lg md:hidden py-4 px-4 z-50 animate-fadeIn">
+                <ul className="flex flex-col space-y-4">
+                  {dadosSite.menuItems.map(item => (
+                    <li key={item.id}>
+                      <a 
+                        href={item.link} 
+                        className="text-carajas-dark hover:text-carajas-accent block py-2" 
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {item.nome}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </header>
+      );
+    }
+
+    function Hero() {
+      return (
+        <section id="home" className="relative bg-cover bg-center h-screen flex items-center" style={{ backgroundImage: 'url(https://i.imgur.com/Fupvbzj.jpeg)' }}>
+          <div className="absolute inset-0 bg-gradient-to-r from-carajas-dark to-carajas-blue opacity-70"></div>
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="max-w-3xl">
+              <span className="inline-block px-4 py-1 bg-white text-carajas-blue rounded-full font-semibold mb-6 text-sm">Seu bem-estar é nossa prioridade</span>
+              <h2 className="text-4xl md:text-6xl font-bold mb-6 text-white leading-tight text-shadow">
+                O melhor plano de saúde para você e sua família
+              </h2>
+              <p className="text-xl text-white mb-8">
+                Há mais de 15 anos ajudando brasileiros a encontrar o plano Hapvida ideal com atendimento personalizado e preços justos.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <a href="#planos" className="bg-white text-carajas-blue py-3 px-8 rounded-full hover:bg-carajas-light transition-colors duration-300 font-semibold shadow-lg transform hover:scale-105">
+                  Ver Planos
+                </a>
+                <a href="#contato" className="border-2 border-white text-white py-3 px-8 rounded-full hover:bg-white hover:text-carajas-blue transition-colors duration-300 font-semibold shadow-lg transform hover:scale-105">
+                  Fale Conosco
+                </a>
+              </div>
+            </div>
+          </div>
+          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <a href="#historia" className="text-white text-3xl">
+              <i className="fas fa-chevron-down"></i>
+            </a>
+          </div>
+        </section>
+      );
+    }
+
+    function BenefitCard({ icon, title, description }) {
+      return (
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+          <div className="bg-carajas-light inline-block p-4 rounded-full text-carajas-blue mb-6">
+            <i className={`${icon} text-3xl`}></i>
+          </div>
+          <h3 className="text-xl font-semibold mb-3">{title}</h3>
+          <p className="text-gray-600">{description}</p>
+        </div>
+      );
+    }
+
+    function Benefits() {
+      const benefits = [
+        {
+          icon: "fas fa-hospital",
+          title: "Ampla Rede Credenciada",
+          description: "Acesso a hospitais, clínicas e laboratórios em todo o Brasil."
+        },
+        {
+          icon: "fas fa-user-md",
+          title: "Médicos Especialistas",
+          description: "Consultas com os melhores profissionais de diversas especialidades."
+        },
+        {
+          icon: "fas fa-tooth",
+          title: "Planos Odontológicos",
+          description: "Tratamentos preventivos e estéticos para um sorriso saudável."
+        },
+        {
+          icon: "fas fa-mobile-alt",
+          title: "App Exclusivo",
+          description: "Agende consultas, exames e tenha acesso a telemedicina 24h."
+        }
+      ];
+
+      return (
+        <section className="py-16 bg-carajas-light">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {benefits.map((benefit, index) => (
+                <BenefitCard key={index} {...benefit} />
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Historia() {
+      return (
+        <section id="historia" className="py-24">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col md:flex-row items-center gap-12">
+              <div className="md:w-1/2 relative">
+                <div className="bg-carajas-blue absolute -top-4 -left-4 w-64 h-64 rounded-lg opacity-20"></div>
+                <img src="https://i.imgur.com/Fupvbzj.jpeg" alt="Equipe Carajás Gestão em Saúde" className="rounded-lg shadow-xl relative z-10" />
+                <div className="bg-carajas-accent absolute -bottom-4 -right-4 w-32 h-32 rounded-lg opacity-20"></div>
+              </div>
+              <div className="md:w-1/2">
+                <div className="mb-6">
+                  <span className="text-sm text-carajas-blue font-semibold uppercase tracking-widest">Conheça nossa trajetória</span>
+                  <h2 className="text-4xl font-bold mt-2 mb-6">Nossa História</h2>
+                  <div className="w-20 h-1 bg-carajas-accent mb-8"></div>
+                </div>
+                <p className="text-lg text-gray-700 mb-6 leading-relaxed">
+
+                  Fundada em 2019, a Carajás Gestão em Saúde nasceu com a missão de transformar o acesso à saúde na região de Carajás. Iniciamos como uma corretora exclusiva e certificada pela operadora Hapvida, oferecendo uma carteira de produtos exclusivos. Com um atendimento humanizado e transparente, conquistamos a confiança de milhares de parceiros e clientes.                </p>
+                <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+                  Nos tornamos especialistas em planos Hapvida, uma das maiores operadoras de saúde do país, e hoje somos reconhecidos pela excelência no atendimento e pelo compromisso em encontrar a solução ideal para cada perfil de cliente.
+                </p>
+                <div className="flex items-center space-x-8">
+                  <div className="text-center">
+                    <span className="text-4xl font-bold text-carajas-blue block">7+</span>
+                    <span className="text-gray-600">Anos no mercado</span>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-4xl font-bold text-carajas-blue block">50k+</span>
+                    <span className="text-gray-600">Clientes atendidos</span>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-4xl font-bold text-carajas-blue block">100%</span>
+                    <span className="text-gray-600">Satisfação*</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Estrutura() {
+      return (
+        <section id="estrutura" className="py-24">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-sm text-carajas-blue font-semibold uppercase tracking-widest">Conheça nosso ambiente</span>
+              <h2 className="text-4xl font-bold mt-2 mb-6">Nossa Estrutura</h2>
+              <div className="w-20 h-1 bg-carajas-accent mx-auto mb-8"></div>
+              <p className="text-lg text-gray-600">
+                Contamos com uma infraestrutura moderna e equipe qualificada para oferecer o melhor atendimento.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow group">
+                <div className="h-80 overflow-hidden">
+                  <img 
+                    src="https://i.imgur.com/Fupvbzj.jpeg" 
+                    alt="Sede Carajás Gestão em Saúde" 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                </div>
+                <div className="p-8">
+                  <h3 className="text-2xl font-bold mb-4 flex items-center">
+                    <i className="fas fa-building text-carajas-blue mr-3"></i>
+                    Sede Moderna
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    Nossa sede está estrategicamente localizada na Rua F, com instalações modernas e confortáveis.
+                    Equipada com tecnologia de ponta, oferecemos um ambiente agradável para receber nossos clientes e parceiros.
+                  </p>
+                  <ul className="mt-6 space-y-2">
+                    <li className="flex items-center">
+                      <i className="fas fa-map-marker-alt text-carajas-blue mr-2"></i>
+                      <span>Rua F, 458, Cidade Nova</span>
+                    </li>
+                    <li className="flex items-center">
+                      <i className="fas fa-clock text-carajas-blue mr-2"></i>
+                      <span>Segunda a Sábado, 8h às 18h</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow group">
+                <div className="h-80 overflow-hidden">
+                  <img 
+                    src="https://i.imgur.com/dfeYx8A.jpeg" 
+                    alt="Equipe Carajás Gestão em Saúde" 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                </div>
+                <div className="p-8">
+                  <h3 className="text-2xl font-bold mb-4 flex items-center">
+                    <i className="fas fa-users text-carajas-blue mr-3"></i>
+                    Equipe Especializada
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    Nossa equipe é formada por consultores com ampla experiência no mercado de planos de saúde,
+                    prontos para oferecer um atendimento personalizado e encontrar a melhor solução para cada cliente.
+                  </p>
+                  <ul className="mt-6 space-y-2">
+                    <li className="flex items-center">
+                      <i className="fas fa-user-tie text-carajas-blue mr-2"></i>
+                      <span>Consultores especializados</span>
+                    </li>
+                    <li className="flex items-center">
+                      <i className="fas fa-headset text-carajas-blue mr-2"></i>
+                      <span>Suporte dedicado pós-venda</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Premiacoes() {
+      const premiacoes = [
+        {
+          ano: "2023.2",
+          titulo: "Certificação Hapvida Nível Prata",
+          descricao: "Reconhecida por excelência em atendimento e vendas de planos Hapvida.",
+          imagem: "https://i.imgur.com/T3RlKPp.jpeg"
+        },
+        {
+          ano: "2024.1",
+          titulo: "Certificação Hapvida Nível Prata",
+          descricao: "Premiada novamente pela qualidade no atendimento e satisfação do cliente.",
+          imagem: "https://i.imgur.com/X9ypa8b.jpeg"
+        },
+               {
+          ano: "2024",
+          titulo: "Top 10 Corretoras do Brasil",
+          descricao: "Destaque entre as melhores corretoras Brasil.",
+          imagem: "https://i.imgur.com/NI4O9Nh.jpeg"
+        },
+      ];
+
+      return (
+        <section id="premiacoes" className="py-24 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-sm text-carajas-blue font-semibold uppercase tracking-widest">Nossas conquistas</span>
+              <h2 className="text-4xl font-bold mt-2 mb-6">Premiações</h2>
+              <div className="w-20 h-1 bg-carajas-accent mx-auto mb-8"></div>
+              <p className="text-lg text-gray-600">
+                Nosso compromisso com a excelência foi reconhecido com importantes premiações, consolidando a Carajás Gestão em Saúde como uma das líderes no mercado de saúde.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {premiacoes.map((premio, index) => (
+                <div key={index} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow text-center">
+                  <img src={premio.imagem} alt={premio.titulo} className="w-24 h-24 mx-auto mb-4 rounded-full object-cover" />
+                  <h3 className="text-xl font-bold mb-2">{premio.titulo}</h3>
+                  <p className="text-gray-600 mb-2">{premio.ano}</p>
+                  <p className="text-gray-500">{premio.descricao}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    // Componente PromoCounter - Contador regressivo para promoções
+    function PromoCounter() {
+      const [timeLeft, setTimeLeft] = React.useState({
+        dias: 0,
+        horas: 0,
+        minutos: 0,
+        segundos: 0
+      });
+      
+      // Data final da promoção (30 dias a partir de agora)
+      const dataFinal = React.useMemo(() => {
+        const data = new Date();
+        data.setDate(data.getDate() + 30);
+        return data;
+      }, []);
+      
+      // Atualizar o contador a cada segundo
+      React.useEffect(() => {
+        const timer = setInterval(() => {
+          const agora = new Date();
+          const diferenca = dataFinal - agora;
+          
+          if (diferenca <= 0) {
+            clearInterval(timer);
+            setTimeLeft({
+              dias: 0,
+              horas: 0,
+              minutos: 0,
+              segundos: 0
+            });
+            return;
+          }
+          
+          const dias = Math.floor(diferenca / (1000 * 60 * 60 * 24));
+          const horas = Math.floor((diferenca % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutos = Math.floor((diferenca % (1000 * 60 * 60)) / (1000 * 60));
+          const segundos = Math.floor((diferenca % (1000 * 60)) / 1000);
+          
+          setTimeLeft({
+            dias,
+            horas,
+            minutos,
+            segundos
+          });
+        }, 1000);
+        
+        return () => clearInterval(timer);
+      }, [dataFinal]);
+      
+      // Formatar número com zero à esquerda
+      const formatarNumero = (numero) => {
+        return numero < 10 ? `0${numero}` : numero;
+      };
+      
+      return (
+        <div className="bg-gradient-to-r from-carajas-blue to-carajas-accent text-white rounded-2xl p-8 mb-12 shadow-xl">
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-bold mb-2">Oferta por Tempo Limitado!</h3>
+            <p className="text-lg">Aproveite carência reduzida na adesão do seu plano individual e empresarial.</p>
+          </div>
+          
+          <div className="flex justify-center items-center space-x-4 mb-8">
+            <div className="text-center">
+              <div className="bg-white text-carajas-blue text-3xl font-bold rounded-lg w-20 h-20 flex items-center justify-center shadow-inner animate-pulse">
+                {formatarNumero(timeLeft.dias)}
+              </div>
+              <span className="text-sm mt-2 block">Dias</span>
+            </div>
+            <div className="text-4xl font-bold">:</div>
+            <div className="text-center">
+              <div className="bg-white text-carajas-blue text-3xl font-bold rounded-lg w-20 h-20 flex items-center justify-center shadow-inner animate-pulse">
+                {formatarNumero(timeLeft.horas)}
+              </div>
+              <span className="text-sm mt-2 block">Horas</span>
+            </div>
+            <div className="text-4xl font-bold">:</div>
+            <div className="text-center">
+              <div className="bg-white text-carajas-blue text-3xl font-bold rounded-lg w-20 h-20 flex items-center justify-center shadow-inner animate-pulse">
+                {formatarNumero(timeLeft.minutos)}
+              </div>
+              <span className="text-sm mt-2 block">Minutos</span>
+            </div>
+            <div className="text-4xl font-bold">:</div>
+            <div className="text-center">
+              <div className="bg-white text-carajas-blue text-3xl font-bold rounded-lg w-20 h-20 flex items-center justify-center shadow-inner animate-pulse">
+                {formatarNumero(timeLeft.segundos)}
+              </div>
+              <span className="text-sm mt-2 block">Segundos</span>
+            </div>
+          </div>
+          
+          <div className="text-center">
+            <a 
+              href="#contato" 
+              className="inline-block bg-white text-carajas-blue py-3 px-8 rounded-full hover:bg-carajas-light transition-colors duration-300 font-semibold shadow-lg transform hover:scale-105"
+            >
+              Aproveitar Agora
+            </a>
+          </div>
+        </div>
+      );
+    }
+
+    // Componente Planos com filtros dinâmicos
+    function Planos() {
+      const [filtroAtivo, setFiltroAtivo] = React.useState('todos');
+      const [planosVisiveis, setPlanosVisiveis] = React.useState(dadosSite.planos);
+      const [animating, setAnimating] = React.useState(false);
+      
+      // Categorias disponíveis para filtro
+      const categorias = [
+        { id: 'todos', nome: 'Todos os Planos' },
+        { id: 'individual', nome: 'Individuais' },
+        { id: 'familiar', nome: 'Familiares' },
+        { id: 'empresarial', nome: 'Empresariais' }
+      ];
+      
+      // Aplicar filtro quando o filtroAtivo mudar
+      React.useEffect(() => {
+        setAnimating(true);
+        
+        // Pequeno delay para a animação de fade-out
+        setTimeout(() => {
+          if (filtroAtivo === 'todos') {
+            setPlanosVisiveis(dadosSite.planos);
+          } else {
+            setPlanosVisiveis(dadosSite.planos.filter(plano => plano.categoria === filtroAtivo));
+          }
+          
+          // Delay para a animação de fade-in
+          setTimeout(() => {
+            setAnimating(false);
+          }, 300);
+        }, 300);
+      }, [filtroAtivo]);
+      
+      // Função para alternar o filtro
+      const alternarFiltro = (categoria) => {
+        setFiltroAtivo(categoria);
+      };
+      
+      // Função para limpar o filtro
+      const limparFiltro = () => {
+        setFiltroAtivo('todos');
+      };
+
+      return (
+        <section id="planos" className="py-24 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-sm text-carajas-blue font-semibold uppercase tracking-widest">Conheça nossas opções</span>
+              <h2 className="text-4xl font-bold mt-2 mb-6">Planos que Cabem no Seu Bolso</h2>
+              <div className="w-20 h-1 bg-carajas-accent mx-auto mb-8"></div>
+              <p className="text-lg text-gray-600">
+                Oferecemos soluções completas em saúde para planos individuais, famíliares e empresariais.
+                Com preços acessíveis e cobertura garantida, garantimos o melhor atendimento para você e sua família. 
+                Consulte nossos especialistas para encontrar o plano ideal para você.
+              </p>
+            </div>
+            
+            {/* Contador regressivo para promoções */}
+            <PromoCounter />
+            
+            {/* Filtros */}
+            <div className="flex flex-wrap justify-center gap-4 mb-12">
+              {categorias.map(categoria => (
+                <button
+                  key={categoria.id}
+                  onClick={() => alternarFiltro(categoria.id)}
+                  className={`py-2 px-6 rounded-full transition-all duration-300 ${
+                    filtroAtivo === categoria.id
+                      ? 'bg-carajas-blue text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {categoria.nome}
+                </button>
+              ))}
+            </div>
+            
+            {/* Contador de resultados */}
+            <div className="text-center mb-8">
+              <p className="text-gray-600">
+                {planosVisiveis.length === 0 ? (
+                  <span>Nenhum plano encontrado. <button onClick={limparFiltro} className="text-carajas-blue underline">Limpar filtros</button></span>
+                ) : (
+                  <span>Mostrando {planosVisiveis.length} {planosVisiveis.length === 1 ? 'plano' : 'planos'}</span>
+                )}
+              </p>
+            </div>
+            
+            {/* Grid de planos */}
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-opacity duration-300 ${animating ? 'opacity-0' : 'opacity-100'}`}>
+              {planosVisiveis.map((plano, index) => (
+                <div 
+                  key={index} 
+                  className={`rounded-2xl overflow-hidden transition-all duration-500 transform hover:-translate-y-2 relative ${plano.destaque ? 'shadow-2xl ring-4 ring-carajas-accent' : 'shadow-xl'}`}
+                >
+                  {plano.destaque && (
+                    <div className="absolute top-0 right-0 bg-carajas-accent text-white py-1 px-4 rounded-bl-lg font-medium z-10">
+                      Mais Popular
+                    </div>
+                  )}
+                  <div className="h-48 overflow-hidden">
+                    <img src={plano.imagem} alt={plano.nome} className="w-full h-full object-cover" />
+                  </div>
+                  <div className={`p-8 bg-white ${plano.destaque ? 'bg-gradient-to-br from-white to-carajas-light' : ''}`}>
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-2xl font-bold">{plano.nome}</h3>
+                      <span className="inline-block px-3 py-1 bg-gray-100 text-xs rounded-full text-gray-600">
+                        {plano.categoria === 'individual' ? 'Individual' : 
+                         plano.categoria === 'familiar' ? 'Familiar' : 'Empresarial'}
+                      </span>
+                    </div>
+                    <div className="mb-6">
+                      <span className="text-3xl font-bold text-carajas-blue">{plano.preco}</span>
+                      <span className="text-gray-500">{plano.periodo}</span>
+                    </div>
+                    <ul className="mb-8 space-y-3">
+                      {plano.recursos.map((recurso, i) => (
+                        <li key={i} className="flex items-start">
+                          <i className="fas fa-check-circle text-green-500 mt-1 mr-2"></i>
+                          <span>{recurso}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <a 
+                      href="#contato" 
+                      className={`block text-center py-3 px-6 rounded-lg font-semibold transition-colors ${
+                        plano.destaque 
+                          ? 'bg-carajas-blue text-white hover:bg-carajas-dark' 
+                          : 'bg-gray-100 text-carajas-blue hover:bg-gray-200'
+                      }`}
+                    >
+                      {plano.preco === "Sob consulta" ? "Solicitar Proposta" : "Contratar Agora"}
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Mensagem quando não há planos */}
+            {planosVisiveis.length === 0 && !animating && (
+              <div className="text-center py-12">
+                <i className="fas fa-search text-4xl text-gray-300 mb-4"></i>
+                <h3 className="text-xl font-semibold text-gray-500 mb-2">Nenhum plano encontrado</h3>
+                <p className="text-gray-500 mb-6">Não encontramos planos com os filtros selecionados.</p>
+                <button 
+                  onClick={limparFiltro}
+                  className="bg-carajas-blue text-white py-2 px-6 rounded-full hover:bg-carajas-dark transition-colors"
+                >
+                  Limpar Filtros
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+      );
+    }
+
+    // Componente Depoimentos com carrossel
+    function Depoimentos() {
+      const [currentIndex, setCurrentIndex] = React.useState(0);
+      const [autoPlay, setAutoPlay] = React.useState(true);
+      const autoPlayRef = React.useRef();
+      const totalDepoimentos = dadosSite.depoimentos.length;
+      const visibleDepoimentos = 3; // Número de depoimentos visíveis por vez em desktop
+      
+      // Configurar autoplay
+      React.useEffect(() => {
+        if (autoPlay) {
+          autoPlayRef.current = setInterval(() => {
+            nextSlide();
+          }, 5000);
+        }
+        
+        return () => {
+          if (autoPlayRef.current) {
+            clearInterval(autoPlayRef.current);
+          }
+        };
+      }, [currentIndex, autoPlay]);
+      
+      const nextSlide = () => {
+        setCurrentIndex((prevIndex) => 
+          prevIndex === totalDepoimentos - visibleDepoimentos ? 0 : prevIndex + 1
+        );
+      };
+      
+      const prevSlide = () => {
+        setCurrentIndex((prevIndex) => 
+          prevIndex === 0 ? totalDepoimentos - visibleDepoimentos : prevIndex - 1
+        );
+      };
+      
+      // Pausar autoplay quando o mouse estiver sobre o carrossel
+      const handleMouseEnter = () => setAutoPlay(false);
+      const handleMouseLeave = () => setAutoPlay(true);
+      
+      // Renderizar estrelas com base na avaliação
+      const renderStars = (rating) => {
+        const stars = [];
+        for (let i = 1; i <= 5; i++) {
+          stars.push(
+            <i 
+              key={i} 
+              className={`fas fa-star ${i <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+            ></i>
+          );
+        }
+        return stars;
+      };
+      
+      // Calcular depoimentos visíveis com base no tamanho da tela
+      const getVisibleDepoimentos = () => {
+        // Em dispositivos móveis, mostrar apenas 1 depoimento por vez
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+          return dadosSite.depoimentos.slice(currentIndex, currentIndex + 1);
+        }
+        // Em tablets, mostrar 2 depoimentos
+        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+          return dadosSite.depoimentos.slice(currentIndex, currentIndex + 2);
+        }
+        // Em desktop, mostrar 3 depoimentos
+        return dadosSite.depoimentos.slice(currentIndex, currentIndex + visibleDepoimentos);
+      };
+
+      return (
+        <section className="py-24 bg-carajas-light">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-sm text-carajas-blue font-semibold uppercase tracking-widest">O que dizem nossos clientes</span>
+              <h2 className="text-4xl font-bold mt-2 mb-6">Depoimentos</h2>
+              <div className="w-20 h-1 bg-carajas-accent mx-auto mb-8"></div>
+            </div>
+            
+            <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+              <div className="flex justify-between items-center mb-6">
+                <button 
+                  onClick={prevSlide} 
+                  className="bg-white text-carajas-blue p-3 rounded-full shadow-lg hover:bg-carajas-blue hover:text-white transition-colors"
+                  aria-label="Depoimento anterior"
+                >
+                  <i className="fas fa-chevron-left"></i>
+                </button>
+                
+                <div className="flex space-x-2">
+                  {dadosSite.depoimentos.map((_, index) => (
+                    <button 
+                      key={index}
+                      onClick={() => setCurrentIndex(index)}
+                      className={`w-3 h-3 rounded-full ${
+                        index >= currentIndex && index < currentIndex + visibleDepoimentos 
+                          ? 'bg-carajas-blue' 
+                          : 'bg-gray-300'
+                      }`}
+                      aria-label={`Ir para depoimento ${index + 1}`}
+                    ></button>
+                  ))}
+                </div>
+                
+                <button 
+                  onClick={nextSlide} 
+                  className="bg-white text-carajas-blue p-3 rounded-full shadow-lg hover:bg-carajas-blue hover:text-white transition-colors"
+                  aria-label="Próximo depoimento"
+                >
+                  <i className="fas fa-chevron-right"></i>
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-all duration-500">
+                {getVisibleDepoimentos().map((depoimento, index) => (
+                  <div 
+                    key={index} 
+                    className="bg-white p-8 rounded-xl shadow-lg transform transition-all duration-500 hover:scale-105"
+                    style={{
+                      opacity: 1,
+                      transform: `translateX(0) scale(1)`
+                    }}
+                  >
+                    <div className="flex items-center mb-6">
+                      <img src={depoimento.avatar} alt={depoimento.nome} className="w-16 h-16 rounded-full object-cover mr-4" />
+                      <div>
+                        <h4 className="font-semibold text-lg">{depoimento.nome}</h4>
+                        <p className="text-gray-500 text-sm">{depoimento.perfil}</p>
+                      </div>
+                    </div>
+                    <p className="text-gray-600 italic">"{depoimento.texto}"</p>
+                    <div className="mt-6">
+                      {renderStars(depoimento.avaliacao)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    // Componente FAQ com sistema de busca
+    function FAQ() {
+      const [openQuestion, setOpenQuestion] = React.useState(null);
+      const [searchTerm, setSearchTerm] = React.useState('');
+      const [filteredFaqs, setFilteredFaqs] = React.useState(dadosSite.faqs);
+      
+      // Filtrar FAQs com base no termo de busca
+      React.useEffect(() => {
+        if (!searchTerm.trim()) {
+          setFilteredFaqs(dadosSite.faqs);
+          return;
+        }
+        
+        const normalizedSearchTerm = searchTerm.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        const filtered = dadosSite.faqs.filter(faq => {
+          const normalizedPergunta = faq.pergunta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          const normalizedResposta = faq.resposta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          
+          return normalizedPergunta.includes(normalizedSearchTerm) || 
+                 normalizedResposta.includes(normalizedSearchTerm);
+        });
+        
+        setFilteredFaqs(filtered);
+        
+        // Fechar pergunta aberta se não estiver nos resultados filtrados
+        if (openQuestion !== null && !filtered.includes(dadosSite.faqs[openQuestion])) {
+          setOpenQuestion(null);
+        }
+      }, [searchTerm]);
+      
+      // Limpar busca
+      const clearSearch = () => {
+        setSearchTerm('');
+        setFilteredFaqs(dadosSite.faqs);
+      };
+      
+      // Destacar termos de busca no texto
+      const highlightText = (text) => {
+        if (!searchTerm.trim()) return text;
+        
+        const normalizedSearchTerm = searchTerm.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const normalizedText = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        const parts = [];
+        let lastIndex = 0;
+        
+        // Encontrar todas as ocorrências do termo de busca
+        let index = normalizedText.toLowerCase().indexOf(normalizedSearchTerm, lastIndex);
+        
+        while (index !== -1) {
+          // Adicionar texto antes do termo de busca
+          parts.push(text.substring(lastIndex, index));
+          
+          // Adicionar termo de busca destacado
+          parts.push(
+            <span key={index} className="bg-yellow-200 font-medium">
+              {text.substring(index, index + searchTerm.length)}
+            </span>
+          );
+          
+          lastIndex = index + searchTerm.length;
+          index = normalizedText.toLowerCase().indexOf(normalizedSearchTerm, lastIndex);
+        }
+        
+        // Adicionar texto restante
+        parts.push(text.substring(lastIndex));
+        
+        return parts;
+      };
+      
+      return (
+        <section className="py-24 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-sm text-carajas-blue font-semibold uppercase tracking-widest">Tire suas dúvidas</span>
+              <h2 className="text-4xl font-bold mt-2 mb-6">Perguntas Frequentes</h2>
+              <div className="w-20 h-1 bg-carajas-accent mx-auto mb-8"></div>
+            </div>
+            
+            <div className="max-w-3xl mx-auto">
+              {/* Campo de busca */}
+              <div className="mb-8 relative">
+                <div className="flex items-center border-2 border-gray-300 rounded-lg overflow-hidden focus-within:border-carajas-blue transition-colors">
+                  <div className="pl-4 text-gray-400">
+                    <i className="fas fa-search"></i>
+                  </div>
+                  <input
+                    type="text"
+                    className="w-full p-4 outline-none text-gray-700"
+                    placeholder="Buscar perguntas frequentes..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && (
+                    <button 
+                      className="pr-4 text-gray-400 hover:text-gray-600"
+                      onClick={clearSearch}
+                      aria-label="Limpar busca"
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  )}
+                </div>
+                {searchTerm && (
+                  <div className="absolute right-0 -bottom-8 text-sm text-gray-500">
+                    {filteredFaqs.length} {filteredFaqs.length === 1 ? 'resultado' : 'resultados'} encontrados
+                  </div>
+                )}
+              </div>
+              
+              {/* Lista de FAQs */}
+              {filteredFaqs.length > 0 ? (
+                filteredFaqs.map((faq, index) => (
+                  <div key={index} className="mb-4">
+                    <button 
+                      className={`w-full text-left p-6 rounded-lg flex justify-between items-center ${
+                        openQuestion === dadosSite.faqs.indexOf(faq) ? 'bg-carajas-blue text-white' : 'bg-white hover:bg-gray-100'
+                      }`}
+                      onClick={() => setOpenQuestion(openQuestion === dadosSite.faqs.indexOf(faq) ? null : dadosSite.faqs.indexOf(faq))}
+                    >
+                      <span className="font-semibold text-lg">
+                        {highlightText(faq.pergunta)}
+                      </span>
+                      <i className={`fas ${openQuestion === dadosSite.faqs.indexOf(faq) ? 'fa-minus' : 'fa-plus'} transition-transform`}></i>
+                    </button>
+                    {openQuestion === dadosSite.faqs.indexOf(faq) && (
+                      <div className="bg-white p-6 rounded-b-lg shadow-inner">
+                        <p className="text-gray-700">
+                          {highlightText(faq.resposta)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12 bg-white rounded-lg shadow">
+                  <i className="fas fa-search text-4xl text-gray-300 mb-4"></i>
+                  <h3 className="text-xl font-semibold text-gray-500 mb-2">Nenhuma pergunta encontrada</h3>
+                  <p className="text-gray-500 mb-6">Tente buscar por outros termos ou verifique a ortografia.</p>
+                  <button 
+                    onClick={clearSearch}
+                    className="bg-carajas-blue text-white py-2 px-6 rounded-full hover:bg-carajas-dark transition-colors"
+                  >
+                    Ver todas as perguntas
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Contato() {
+      return (
+        <section id="contato" className="py-24 bg-carajas-light">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-sm text-carajas-blue font-semibold uppercase tracking-widest">Fale conosco</span>
+              <h2 className="text-4xl font-bold mt-2 mb-6">Entre em Contato</h2>
+              <div className="w-20 h-1 bg-carajas-accent mx-auto mb-8"></div>
+              <p className="text-lg text-gray-600">
+                Nossa equipe está pronta para ajudar você a encontrar o plano ideal. Entre em contato por telefone, e-mail ou WhatsApp!
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white p-6 rounded-xl shadow-lg text-center">
+                <i className="fas fa-phone-alt text-3xl text-carajas-blue mb-4"></i>
+                <h3 className="text-xl font-semibold mb-2">Telefone</h3>
+                <p className="text-gray-600">(94) 99103-3062</p>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-lg text-center">
+                <i className="fas fa-envelope text-3xl text-carajas-blue mb-4"></i>
+                <h3 className="text-xl font-semibold mb-2">E-mail</h3>
+                <p className="text-gray-600">contato@carajassaude.net</p>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-lg text-center">
+                <i className="fab fa-whatsapp text-3xl text-carajas-blue mb-4"></i>
+                <h3 className="text-xl font-semibold mb-2">WhatsApp</h3>
+                <p className="text-gray-600">Clique no chat para falar conosco!</p>
+              </div>
+            </div>
+            <div className="mt-12 text-center">
+              <h3 className="text-2xl font-semibold mb-4">Endereço</h3>
+              <p className="text-lg text-gray-600">Rua F, 1458, Cidade Nova, Parauapebas - PA, CEP 68515-0000</p>
+              <p className="text-lg text-gray-600">Horário: Segunda a Sábado, 8h às 18h</p>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Intranet() {
+      return (
+        <section id="intranet" className="py-24 bg-carajas-light">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-sm text-carajas-blue font-semibold uppercase tracking-widest">Acesse nossa plataforma interna</span>
+              <h2 className="text-4xl font-bold mt-2 mb-6">Intranet</h2>
+              <div className="w-20 h-1 bg-carajas-accent mx-auto mb-8"></div>
+              <p className="text-lg text-gray-600">
+                Nossa intranet é o hub digital para colaboradores, oferecendo acesso a recursos, documentos, comunicados internos e ferramentas de gestão em um ambiente seguro e intuitivo.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div className="relative">
+                <div className="bg-carajas-blue absolute -top-4 -left-4 w-64 h-64 rounded-lg opacity-20"></div>
+                <img 
+                  src="https://i.imgur.com/Fupvbzj.jpeg" 
+                  alt="Intranet Carajás Gestão em Saúde" 
+                  className="rounded-lg shadow-xl relative z-10 w-full h-96 object-cover"
+                />
+                <div className="bg-carajas-accent absolute -bottom-4 -right-4 w-32 h-32 rounded-lg opacity-20"></div>
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold mb-4 text-carajas-dark">Recursos da Intranet</h3>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-start">
+                    <i className="fas fa-file-alt text-carajas-blue mt-1 mr-2"></i>
+                    <span>Acesso a documentos e manuais internos</span>
+                  </li>
+                  <li className="flex items-start">
+                    <i className="fas fa-bullhorn text-carajas-blue mt-1 mr-2"></i>
+                    <span>Comunicados e notícias da empresa</span>
+                  </li>
+                  <li className="flex items-start">
+                    <i className="fas fa-tools text-carajas-blue mt-1 mr-2"></i>
+                    <span>Ferramentas de gestão e produtividade</span>
+                  </li>
+                  <li className="flex items-start">
+                    <i className="fas fa-lock text-carajas-blue mt-1 mr-2"></i>
+                    <span>Ambiente seguro com login protegido</span>
+                  </li>
+                </ul>
+                <a 
+                  href="intranet.html" 
+                  target="_blank" 
+                  className="inline-block bg-carajas-blue text-white py-3 px-8 rounded-full hover:bg-carajas-dark transition-colors duration-300 font-semibold shadow-lg transform hover:scale-105"
+                >
+                  Acessar Intranet
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function ChatBot() {
+      const [isOpen, setIsOpen] = React.useState(false);
+      const [nome, setNome] = React.useState('');
+      const [telefone, setTelefone] = React.useState('');
+      const [mensagem, setMensagem] = React.useState('');
+      const [step, setStep] = React.useState(1);
+      const [enviado, setEnviado] = React.useState(false);
+
+      const handleNext = () => {
+        if (step === 1 && !nome.trim()) {
+          alert("Por favor, insira seu nome.");
+          return;
+        }
+        if (step === 2 && !telefone.trim()) {
+          alert("Por favor, insira seu telefone.");
+          return;
+        }
+        if (step === 3 && !mensagem.trim()) {
+          alert("Por favor, insira sua mensagem.");
+          return;
+        }
+        if (step < 3) {
+          setStep(step + 1);
+        } else {
+          setEnviado(true);
+          setTimeout(() => {
+            const whatsappNumber = "5594991033062";
+            const whatsappMsg = `Olá, sou ${nome}. Telefone: ${telefone}. Mensagem: ${mensagem}`;
+            const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMsg)}`;
+            window.open(whatsappUrl, '_blank');
+            setIsOpen(false);
+            setNome('');
+            setTelefone('');
+            setMensagem('');
+            setStep(1);
+            setEnviado(false);
+          }, 2000);
+        }
+      };
+
+      return (
+        <div className="fixed bottom-6 right-6 z-50">
+          {isOpen ? (
+            <div className="bg-white p-6 rounded-xl shadow-2xl w-96 max-w-[90vw]">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-carajas-blue">Fale com a Carajás Gestão em Saúde</h3>
+                <button
+                  className="text-gray-500 hover:text-gray-700"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+              {enviado ? (
+                <div className="text-center">
+                  <i className="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
+                  <p className="text-gray-700">Mensagem enviada! Você será redirecionado para o WhatsApp em breve.</p>
+                </div>
+              ) : (
+                <>
+                  {step === 1 && (
+                    <div>
+                      <label className="block text-gray-700 mb-2">Nome</label>
+                      <input
+                        type="text"
+                        className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-carajas-blue"
+                        value={nome}
+                        onChange={(e) => setNome(e.target.value)}
+                        placeholder="Digite seu nome"
+                      />
+                    </div>
+                  )}
+                  {step === 2 && (
+                    <div>
+                      <label className="block text-gray-700 mb-2">Telefone</label>
+                      <input
+                        type="tel"
+                        className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-carajas-blue"
+                        value={telefone}
+                        onChange={(e) => setTelefone(e.target.value)}
+                        placeholder="(XX) XXXXX-XXXX"
+                      />
+                    </div>
+                  )}
+                  {step === 3 && (
+                    <div>
+                      <label className="block text-gray-700 mb-2">Mensagem</label>
+                      <textarea
+                        className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-carajas-blue"
+                        rows="4"
+                        value={mensagem}
+                        onChange={(e) => setMensagem(e.target.value)}
+                        placeholder="Digite sua mensagem..."
+                      ></textarea>
+                    </div>
+                  )}
+                  <div className="flex justify-between mt-6">
+                    {step > 1 && (
+                      <button
+                        className="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition"
+                        onClick={() => setStep(step - 1)}
+                      >
+                        Voltar
+                      </button>
+                    )}
+                    <button
+                      className="bg-carajas-blue text-white py-2 px-4 rounded-lg hover:bg-carajas-dark transition ml-auto"
+                      onClick={handleNext}
+                    >
+                      {step === 3 ? "Enviar via WhatsApp" : "Próximo"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <button
+              className="bg-carajas-blue text-white p-5 rounded-full shadow-lg hover:bg-carajas-dark transition transform hover:scale-105"
+              onClick={() => setIsOpen(true)}
+            >
+              <i className="fab fa-whatsapp text-2xl"></i>
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    function Footer() {
+      return (
+        <footer className="bg-carajas-dark text-white py-12">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div>
+                <div className="flex items-center mb-4">
+                  <img src="https://i.imgur.com/Fupvbzj.jpeg" alt="Carajás Gestão em Saúde Logo" className="w-12 h-12 mr-3" />
+                  <h3 className="text-2xl font-bold">Carajás Gestão em Saúde</h3>
+                </div>
+                <p className="text-gray-300">
+                  Especialistas em planos de saúde e odontológicos Hapvida, oferecendo as melhores soluções para você e sua família.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-4">Links Rápidos</h3>
+                <ul className="space-y-2">
+                  <li><a href="#home" className="text-gray-300 hover:text-carajas-accent">Início</a></li>
+                  <li><a href="#historia" className="text-gray-300 hover:text-carajas-accent">História</a></li>
+                  <li><a href="#estrutura" className="text-gray-300 hover:text-carajas-accent">Estrutura</a></li>
+                  <li><a href="#premiacoes" className="text-gray-300 hover:text-carajas-accent">Premiações</a></li>
+                  <li><a href="#planos" className="text-gray-300 hover:text-carajas-accent">Planos</a></li>
+                  <li><a href="#contato" className="text-gray-300 hover:text-carajas-accent">Contato</a></li>
+                  <li><a href="#intranet" className="text-gray-300 hover:text-carajas-accent">Intranet</a></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-4">Contato</h3>
+                <ul className="space-y-2">
+                  <li className="flex items-center">
+                    <i className="fas fa-map-marker-alt mr-2"></i>
+                    <span>Rua F, 1458, Cidade Nova, Parauapebas - PA, CEP 68515-0000 </span>
+                  </li>
+                  <li className="flex items-center">
+                    <i className="fas fa-phone-alt mr-2"></i>
+                    <span>(94) 99103-3062</span>
+                  </li>
+                  <li className="flex items-center">
+                    <i className="fas fa-envelope mr-2"></i>
+                    <span>contato@carajasaude.net</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div className="mt-8 pt-8 border-t border-gray-700 text-center">
+              <p>© 2025 Carajás Gestão em Saúde. Todos os direitos reservados.</p>
+            </div>
+          </div>
+        </footer>
+      );
+    }
+
+    function App() {
+      return (
+        <div>
+          <Header />
+          <Hero />
+          <Benefits />
+          <Historia />
+          <Estrutura />
+          <Premiacoes />
+          <Planos />
+          <Depoimentos />
+          <FAQ />
+          <Contato />
+          <Intranet />
+          <Footer />
+          <ChatBot />
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>

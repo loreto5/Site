@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Portal de acesso à Intranet da Carajás Gestão em Saúde">
+  <title>Intranet | Carajás Gestão em Saúde</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.0/babel.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'carajas-blue': '#0052CC',
+            'carajas-light': '#EBF5FF',
+            'carajas-dark': '#00377A',
+            'carajas-accent': '#00B0FF'
+          },
+          fontFamily: {
+            'sans': ['Montserrat', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    /* Adiciona efeitos de foco para acessibilidade */
+    *:focus-visible {
+      outline: 2px solid #00B0FF;
+      outline-offset: 2px;
+    }
+    
+    /* Animação para transições suaves */
+    .fade-in {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // Hook personalizado para formulários
+    function useForm(initialState) {
+      const [values, setValues] = React.useState(initialState);
+      const [errors, setErrors] = React.useState({});
+      const [isSubmitting, setIsSubmitting] = React.useState(false);
+      
+      const handleChange = (e) => {
+        const { name, value } = e.target;
+        setValues({
+          ...values,
+          [name]: value
+        });
+        
+        // Limpa o erro quando o usuário começa a digitar novamente
+        if (errors[name]) {
+          setErrors({
+            ...errors,
+            [name]: null
+          });
+        }
+      };
+      
+      return {
+        values,
+        setValues,
+        errors,
+        setErrors,
+        isSubmitting,
+        setIsSubmitting,
+        handleChange
+      };
+    }
+    
+    // Componente de mensagem de feedback
+    function FeedbackMessage({ type, message }) {
+      if (!message) return null;
+      
+      const bgColor = type === 'error' ? 'bg-red-100' : 'bg-green-100';
+      const textColor = type === 'error' ? 'text-red-700' : 'text-green-700';
+      const icon = type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
+      
+      return (
+        <div className={`${bgColor} ${textColor} p-3 rounded-lg mb-4 flex items-center justify-center fade-in`}>
+          <i className={`${icon} mr-2`}></i>
+          {message}
+        </div>
+      );
+    }
+    
+    // Componente de campo de formulário
+    function FormField({ label, type, name, value, placeholder, onChange, error, pattern, maxLength, required }) {
+      return (
+        <div className="space-y-2">
+          <label htmlFor={name} className="block text-gray-700 font-medium">
+            {label} {required && <span className="text-red-500">*</span>}
+          </label>
+          <input
+            id={name}
+            type={type}
+            name={name}
+            className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-carajas-blue
+              ${error ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+            placeholder={placeholder}
+            value={value}
+            onChange={onChange}
+            pattern={pattern}
+            maxLength={maxLength}
+            required={required}
+            aria-invalid={error ? "true" : "false"}
+            aria-describedby={error ? `${name}-error` : undefined}
+          />
+          {error && (
+            <p className="text-red-500 text-sm mt-1" id={`${name}-error`} role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+      );
+    }
+    
+    // Máscara para CPF/CNPJ
+    function formatDocument(value) {
+      // Remove caracteres não numéricos
+      const numbers = value.replace(/\D/g, '');
+      
+      if (numbers.length <= 11) {
+        // Formato CPF: 000.000.000-00
+        return numbers
+          .replace(/(\d{3})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+          .substring(0, 14);
+      } else {
+        // Formato CNPJ: 00.000.000/0000-00
+        return numbers
+          .replace(/(\d{2})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d)/, '$1/$2')
+          .replace(/(\d{4})(\d{1,2})$/, '$1-$2')
+          .substring(0, 18);
+      }
+    }
+    
+    // Máscara para data
+    function formatDate(value) {
+      const numbers = value.replace(/\D/g, '');
+      
+      return numbers
+        .replace(/(\d{2})(\d)/, '$1/$2')
+        .replace(/(\d{2})(\d)/, '$1/$2')
+        .substring(0, 10);
+    }
+    
+    // Componente principal
+    function IntranetLogin() {
+      const [activePanel, setActivePanel] = React.useState('collaborator');
+      const [feedback, setFeedback] = React.useState({ type: null, message: '' });
+      const [loading, setLoading] = React.useState(false);
+      
+      // Form para colaboradores
+      const collaboratorForm = useForm({
+        username: '',
+        password: ''
+      });
+      
+      // Form para usuários
+      const userForm = useForm({
+        document: '',
+        formattedDocument: '',
+        birthDate: '',
+        formattedBirthDate: ''
+      });
+      
+      // Validação do formulário de colaborador
+      const validateCollaboratorForm = () => {
+        const { username, password } = collaboratorForm.values;
+        const errors = {};
+        
+        if (!username.trim()) {
+          errors.username = 'O nome de usuário é obrigatório';
+        }
+        
+        if (!password) {
+          errors.password = 'A senha é obrigatória';
+        } else if (password.length < 4) {
+          errors.password = 'A senha deve ter pelo menos 4 caracteres';
+        }
+        
+        collaboratorForm.setErrors(errors);
+        return Object.keys(errors).length === 0;
+      };
+      
+      // Validação do formulário de usuário
+      const validateUserForm = () => {
+        const { document, birthDate } = userForm.values;
+        const errors = {};
+        
+        // Remove formatação para validação
+        const cleanDocument = document.replace(/\D/g, '');
+        const cleanDate = birthDate.replace(/\D/g, '');
+        
+        if (!cleanDocument) {
+          errors.document = 'O CPF ou CNPJ é obrigatório';
+        } else if (cleanDocument.length !== 11 && cleanDocument.length !== 14) {
+          errors.document = 'Digite um CPF (11 dígitos) ou CNPJ (14 dígitos) válido';
+        }
+        
+        if (!cleanDate) {
+          errors.birthDate = 'A data de nascimento é obrigatória';
+        } else if (cleanDate.length !== 8) {
+          errors.birthDate = 'Digite uma data válida no formato DD/MM/AAAA';
+        } else {
+          // Valida a data
+          const day = parseInt(cleanDate.substring(0, 2));
+          const month = parseInt(cleanDate.substring(2, 4));
+          const year = parseInt(cleanDate.substring(4, 8));
+          
+          const date = new Date(year, month - 1, day);
+          const currentYear = new Date().getFullYear();
+          
+          if (
+            date.getDate() !== day ||
+            date.getMonth() + 1 !== month ||
+            date.getFullYear() !== year ||
+            year < 1900 ||
+            year > currentYear
+          ) {
+            errors.birthDate = 'Data de nascimento inválida';
+          }
+        }
+        
+        userForm.setErrors(errors);
+        return Object.keys(errors).length === 0;
+      };
+      
+      // Autenticação de colaborador
+      const authenticateCollaborator = async () => {
+        // Simulação de chamada de API
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            if (
+              collaboratorForm.values.username === 'admin' && 
+              collaboratorForm.values.password === 'admin'
+            ) {
+              resolve({ success: true });
+            } else {
+              resolve({ 
+                success: false, 
+                message: 'Usuário ou senha inválidos. Tente novamente.' 
+              });
+            }
+          }, 800);
+        });
+      };
+      
+      // Autenticação de usuário
+      const authenticateUser = async () => {
+        // Extrai apenas os números
+        const cleanDocument = userForm.values.document.replace(/\D/g, '');
+        const cleanDate = userForm.values.birthDate.replace(/\D/g, '');
+        
+        // Formata a data para DD-MM-YYYY para comparar com o formato esperado
+        const formattedDate = `${cleanDate.substring(0, 2)}-${cleanDate.substring(2, 4)}-${cleanDate.substring(4, 8)}`;
+        
+        // Simulação de chamada de API
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            if (
+              (cleanDocument === '12345678900' || cleanDocument === '12345678000195') &&
+              formattedDate === '01-01-1990'
+            ) {
+              resolve({ success: true });
+            } else {
+              resolve({ 
+                success: false, 
+                message: 'CPF/CNPJ ou data de nascimento inválidos. Verifique os dados e tente novamente.' 
+              });
+            }
+          }, 800);
+        });
+      };
+      
+      // Handler para envio do formulário de colaborador
+      const handleCollaboratorSubmit = async (e) => {
+        e.preventDefault();
+        
+        setFeedback({ type: null, message: '' });
+        
+        if (!validateCollaboratorForm()) {
+          return;
+        }
+        
+        setLoading(true);
+        
+        try {
+          const result = await authenticateCollaborator();
+          
+          if (result.success) {
+            setFeedback({ 
+              type: 'success', 
+              message: 'Login realizado com sucesso! Redirecionando...' 
+            });
+            
+            // Redirecionamento após 1 segundo
+            setTimeout(() => {
+              window.location.href = 'collaborator.html';
+            }, 1000);
+          } else {
+            setFeedback({ type: 'error', message: result.message });
+          }
+        } catch (error) {
+          setFeedback({ 
+            type: 'error', 
+            message: 'Ocorreu um erro durante o login. Tente novamente.'
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      // Handler para envio do formulário de usuário
+      const handleUserSubmit = async (e) => {
+        e.preventDefault();
+        
+        setFeedback({ type: null, message: '' });
+        
+        if (!validateUserForm()) {
+          return;
+        }
+        
+        setLoading(true);
+        
+        try {
+          const result = await authenticateUser();
+          
+          if (result.success) {
+            setFeedback({ 
+              type: 'success', 
+              message: 'Login realizado com sucesso! Redirecionando...' 
+            });
+            
+            // Redirecionamento após 1 segundo
+            setTimeout(() => {
+              window.location.href = 'user.html';
+            }, 1000);
+          } else {
+            setFeedback({ type: 'error', message: result.message });
+          }
+        } catch (error) {
+          setFeedback({ 
+            type: 'error', 
+            message: 'Ocorreu um erro durante o login. Tente novamente.'
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      // Manipulador para o campo de documento
+      const handleDocumentChange = (e) => {
+        const rawValue = e.target.value;
+        const formattedValue = formatDocument(rawValue);
+        
+        userForm.setValues({
+          ...userForm.values,
+          document: rawValue.replace(/\D/g, ''),
+          formattedDocument: formattedValue
+        });
+        
+        // Limpa erros
+        if (userForm.errors.document) {
+          userForm.setErrors({
+            ...userForm.errors,
+            document: null
+          });
+        }
+      };
+      
+      // Manipulador para o campo de data
+      const handleDateChange = (e) => {
+        const rawValue = e.target.value;
+        const formattedValue = formatDate(rawValue);
+        
+        userForm.setValues({
+          ...userForm.values,
+          birthDate: rawValue.replace(/\D/g, ''),
+          formattedBirthDate: formattedValue
+        });
+        
+        // Limpa erros
+        if (userForm.errors.birthDate) {
+          userForm.setErrors({
+            ...userForm.errors,
+            birthDate: null
+          });
+        }
+      };
+      
+      // Alternar entre os painéis
+      const switchPanel = (panel) => {
+        if (panel === activePanel) return;
+        
+        setActivePanel(panel);
+        setFeedback({ type: null, message: '' });
+      };
+
+      return (
+        <div>
+          {/* Header */}
+          <header className="bg-white shadow-lg py-4">
+            <div className="container mx-auto px-4 flex items-center justify-between">
+              <div className="flex items-center">
+                <img 
+                  src="https://i.imgur.com/Fupvbzj.jpeg" 
+                  alt="Carajás Gestão em Saúde Logo" 
+                  className="w-12 h-12 mr-3" 
+                />
+                <h1 className="text-2xl font-extrabold text-carajas-dark">Intranet Carajás Gestão em Saúde</h1>
+              </div>
+              <a 
+                href="index.html" 
+                className="text-carajas-blue hover:text-carajas-accent font-medium transition-colors duration-300 px-4 py-2 rounded hover:bg-carajas-light"
+                aria-label="Voltar ao site principal"
+              >
+                <i className="fas fa-home mr-2"></i>
+                Voltar ao Site
+              </a>
+            </div>
+          </header>
+
+          {/* Main Content */}
+          <main className="py-16">
+            <div className="container mx-auto px-4">
+              <div className="text-center max-w-3xl mx-auto mb-12">
+                <h2 className="text-4xl font-bold text-carajas-dark mb-6">Bem-vindo à Intranet</h2>
+                <div className="w-20 h-1 bg-carajas-accent mx-auto mb-8"></div>
+                <p className="text-lg text-gray-600">
+                  Faça login como colaborador ou usuário para acessar recursos personalizados.
+                </p>
+              </div>
+
+              <div className="max-w-lg mx-auto">
+                {/* Seletor de Tipo de Login */}
+                <div className="flex justify-center mb-8">
+                  <button
+                    className={`px-6 py-3 rounded-l-lg font-semibold transition-colors duration-300 flex items-center ${
+                      activePanel === 'collaborator'
+                        ? 'bg-carajas-blue text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                    onClick={() => switchPanel('collaborator')}
+                    aria-pressed={activePanel === 'collaborator'}
+                    aria-label="Login de Colaborador"
+                  >
+                    <i className="fas fa-user-tie mr-2"></i>
+                    Colaborador
+                  </button>
+                  <button
+                    className={`px-6 py-3 rounded-r-lg font-semibold transition-colors duration-300 flex items-center ${
+                      activePanel === 'user'
+                        ? 'bg-carajas-blue text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                    onClick={() => switchPanel('user')}
+                    aria-pressed={activePanel === 'user'}
+                    aria-label="Login de Usuário"
+                  >
+                    <i className="fas fa-user mr-2"></i>
+                    Usuário
+                  </button>
+                </div>
+
+                {/* Formulário de Login */}
+                <div className="bg-white p-8 rounded-xl shadow-lg mx-auto fade-in">
+                  <FeedbackMessage type={feedback.type} message={feedback.message} />
+                  
+                  {activePanel === 'collaborator' ? (
+                    <div>
+                      <h3 className="text-2xl font-semibold text-carajas-dark mb-6 flex items-center">
+                        <i className="fas fa-user-shield mr-3 text-carajas-accent"></i>
+                        Login de Colaborador
+                      </h3>
+                      
+                      <form onSubmit={handleCollaboratorSubmit} className="space-y-4">
+                        <FormField
+                          label="Usuário"
+                          type="text"
+                          name="username"
+                          value={collaboratorForm.values.username}
+                          placeholder="Digite seu usuário"
+                          onChange={collaboratorForm.handleChange}
+                          error={collaboratorForm.errors.username}
+                          required={true}
+                        />
+                        
+                        <FormField
+                          label="Senha"
+                          type="password"
+                          name="password"
+                          value={collaboratorForm.values.password}
+                          placeholder="Digite sua senha"
+                          onChange={collaboratorForm.handleChange}
+                          error={collaboratorForm.errors.password}
+                          required={true}
+                        />
+                        
+                        <div className="flex justify-between items-center mt-2 mb-4">
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id="remember"
+                              className="h-4 w-4 text-carajas-blue focus:ring-carajas-accent border-gray-300 rounded"
+                            />
+                            <label htmlFor="remember" className="ml-2 block text-sm text-gray-700">
+                              Lembrar-me
+                            </label>
+                          </div>
+                          
+                          <a href="#" className="text-sm font-medium text-carajas-blue hover:text-carajas-accent">
+                            Esqueci minha senha
+                          </a>
+                        </div>
+                        
+                        <button
+                          type="submit"
+                          className="w-full bg-carajas-blue text-white py-3 rounded-lg hover:bg-carajas-dark transition-colors duration-300 font-semibold flex justify-center items-center"
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <>
+                              <i className="fas fa-circle-notch fa-spin mr-2"></i>
+                              Processando...
+                            </>
+                          ) : (
+                            <>
+                              <i className="fas fa-sign-in-alt mr-2"></i>
+                              Entrar
+                            </>
+                          )}
+                        </button>
+                      </form>
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="text-2xl font-semibold text-carajas-dark mb-6 flex items-center">
+                        <i className="fas fa-user-plus mr-3 text-carajas-accent"></i>
+                        Login de Usuário
+                      </h3>
+                      
+                      <form onSubmit={handleUserSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                          <label htmlFor="document" className="block text-gray-700 font-medium">
+                            CPF ou CNPJ <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="document"
+                            type="text"
+                            className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-carajas-blue
+                              ${userForm.errors.document ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                            placeholder="Digite seu CPF ou CNPJ"
+                            value={userForm.values.formattedDocument}
+                            onChange={handleDocumentChange}
+                            maxLength={18}
+                            required
+                            aria-invalid={userForm.errors.document ? "true" : "false"}
+                            aria-describedby={userForm.errors.document ? "document-error" : undefined}
+                          />
+                          {userForm.errors.document && (
+                            <p className="text-red-500 text-sm mt-1" id="document-error" role="alert">
+                              {userForm.errors.document}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-500 mt-1">
+                            Apenas números. Ex: CPF: 123.456.789-00 ou CNPJ: 12.345.678/0001-95
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label htmlFor="birthDate" className="block text-gray-700 font-medium">
+                            Data de Nascimento <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="birthDate"
+                            type="text"
+                            className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-carajas-blue
+                              ${userForm.errors.birthDate ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                            placeholder="DD/MM/AAAA"
+                            value={userForm.values.formattedBirthDate}
+                            onChange={handleDateChange}
+                            maxLength={10}
+                            required
+                            aria-invalid={userForm.errors.birthDate ? "true" : "false"}
+                            aria-describedby={userForm.errors.birthDate ? "birthDate-error" : undefined}
+                          />
+                          {userForm.errors.birthDate && (
+                            <p className="text-red-500 text-sm mt-1" id="birthDate-error" role="alert">
+                              {userForm.errors.birthDate}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <button
+                          type="submit"
+                          className="w-full bg-carajas-blue text-white py-3 rounded-lg hover:bg-carajas-dark transition-colors duration-300 font-semibold flex justify-center items-center"
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <>
+                              <i className="fas fa-circle-notch fa-spin mr-2"></i>
+                              Processando...
+                            </>
+                          ) : (
+                            <>
+                              <i className="fas fa-sign-in-alt mr-2"></i>
+                              Entrar
+                            </>
+                          )}
+                        </button>
+                      </form>
+                      
+                      <div className="mt-6 pt-4 border-t border-gray-200">
+                        <p className="text-sm text-gray-600">
+                          Não tem cadastro? <a href="#" className="text-carajas-blue font-medium">Cadastre-se aqui</a>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Help Section */}
+                <div className="mt-8 text-center">
+                  <p className="text-gray-600">
+                    Precisa de ajuda? <a href="#" className="text-carajas-blue font-medium">Entre em contato</a> com nosso suporte
+                  </p>
+                </div>
+              </div>
+            </div>
+          </main>
+
+          {/* Footer */}
+          <footer className="bg-carajas-dark text-white py-12 mt-16">
+            <div className="container mx-auto px-4">
+              <div className="flex flex-col md:flex-row justify-between items-center">
+                <div className="mb-4 md:mb-0">
+                  <p className="font-semibold">© 2025 Carajás Gestão em Saúde. Todos os direitos reservados.</p>
+                </div>
+                <div className="flex space-x-4">
+                  <a href="#" className="text-white hover:text-carajas-accent transition-colors" aria-label="Política de Privacidade">
+                    Política de Privacidade
+                  </a>
+                  <span className="text-gray-400">|</span>
+                  <a href="#" className="text-white hover:text-carajas-accent transition-colors" aria-label="Termos de Uso">
+                    Termos de Uso
+                  </a>
+                </div>
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    // Renderiza o componente
+    ReactDOM.render(<IntranetLogin />, document.getElementById('root'));
+  </script>
+</body>
+</html>
